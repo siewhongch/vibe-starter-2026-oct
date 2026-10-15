@@ -1,0 +1,6 @@
+{
+  "name": "The New York Times",
+  "description": "The New York Times front page and digital newspaper with breaking news, interactive games, opinion, Wirecutter reviews, and reader view.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
