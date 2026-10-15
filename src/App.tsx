@@ -1,1085 +1,682 @@
 import React, { useState, useEffect } from 'react';
 import {
   Search,
-  Bookmark,
-  Share2,
-  Headphones,
-  Check,
-  ChevronRight,
-  Flame,
-  MessageSquare,
-  Globe,
-  Sparkles,
-  ExternalLink,
-  BookOpen,
-  CloudSun,
+  Star,
+  Sun,
+  Moon,
   TrendingUp,
   TrendingDown,
-  Printer,
-  X
+  BarChart2,
+  Activity,
+  Layers,
+  Globe,
+  ArrowUpRight,
+  ArrowDownRight,
+  Calendar,
+  ChevronRight,
+  Maximize2,
+  SlidersHorizontal,
+  Compass,
+  Zap,
+  Info,
+  Clock,
+  ExternalLink
 } from 'lucide-react';
-import { ARTICLES, Article, WIRECUTTER_ITEMS, FIELD_REPORTS } from './data/newsData';
-import { WordleModal } from './components/WordleModal';
-import { MiniCrosswordModal } from './components/MiniCrosswordModal';
-import { ConnectionsModal } from './components/ConnectionsModal';
-import { SpellingBeeModal } from './components/SpellingBeeModal';
-import { ArticleModal } from './components/ArticleModal';
-import { SearchModal } from './components/SearchModal';
-import { SubscribeModal } from './components/SubscribeModal';
-import { LoginModal } from './components/LoginModal';
-import { WirecutterModal } from './components/WirecutterModal';
-import { CookingModal } from './components/CookingModal';
-import { TechTipModal } from './components/TechTipModal';
-import { SavedArticlesDrawer } from './components/SavedArticlesDrawer';
-import { AudioBar } from './components/AudioBar';
-import { TodaysPaperModal } from './components/TodaysPaperModal';
+import {
+  MarketSymbol,
+  MAJOR_INDICES,
+  STOCKS_DATA,
+  CRYPTO_DATA,
+  FOREX_DATA,
+  COMMODITIES_DATA,
+  BONDS_DATA,
+  SECTORS,
+  ECONOMIC_EVENTS
+} from './data/marketData';
+import { TickerTape } from './components/TickerTape';
+import { SparklineChart } from './components/SparklineChart';
+import { InteractiveChartModal } from './components/InteractiveChartModal';
+import { TechnicalGauge } from './components/TechnicalGauge';
+import { WatchlistSidebar } from './components/WatchlistSidebar';
+import { SymbolSearchModal } from './components/SymbolSearchModal';
 
 export default function App() {
-  // Modal states
-  const [activeArticle, setActiveArticle] = useState<Article | null>(null);
-  const [isArticleModalOpen, setIsArticleModalOpen] = useState(false);
-  const [isWordleOpen, setIsWordleOpen] = useState(false);
-  const [isMiniOpen, setIsMiniOpen] = useState(false);
-  const [isConnectionsOpen, setIsConnectionsOpen] = useState(false);
-  const [isSpellingBeeOpen, setIsSpellingBeeOpen] = useState(false);
+  const [isDark, setIsDark] = useState<boolean>(true);
+  const [activeMarketTab, setActiveMarketTab] = useState<'overview' | 'stocks' | 'crypto' | 'forex' | 'commodities' | 'bonds'>('overview');
+  const [activeStockFilter, setActiveStockFilter] = useState<'large-cap' | 'top-gainers' | 'top-losers' | 'most-active'>('large-cap');
+  const [selectedRegion, setSelectedRegion] = useState<'us' | 'europe' | 'asia' | 'world'>('us');
+
+  // Modal / drawer states
+  const [selectedChartSymbol, setSelectedChartSymbol] = useState<MarketSymbol | null>(null);
+  const [isChartModalOpen, setIsChartModalOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isSubscribeOpen, setIsSubscribeOpen] = useState(false);
-  const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const [isWirecutterOpen, setIsWirecutterOpen] = useState(false);
-  const [wirecutterSelectedId, setWirecutterSelectedId] = useState<string>('wc1');
-  const [isCookingOpen, setIsCookingOpen] = useState(false);
-  const [isTechTipOpen, setIsTechTipOpen] = useState(false);
-  const [isSavedDrawerOpen, setIsSavedDrawerOpen] = useState(false);
-  const [isTodaysPaperOpen, setIsTodaysPaperOpen] = useState(false);
-  const [isAudioBarOpen, setIsAudioBarOpen] = useState(false);
-  const [audioTitle, setAudioTitle] = useState('The Daily: Inside the Shift in Trump’s Inner Circle');
+  const [isWatchlistOpen, setIsWatchlistOpen] = useState(false);
 
-  // User state
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [savedArticleIds, setSavedArticleIds] = useState<string[]>(['press-secretary-attorney']);
-  const [selectedEdition, setSelectedEdition] = useState<'us' | 'international' | 'canada' | 'espanol' | 'chinese'>('us');
-  const [bannerDismissed, setBannerDismissed] = useState(false);
-  const [breakingDismissed, setBreakingDismissed] = useState(false);
+  // Watchlist items (persisted)
+  const [watchlist, setWatchlist] = useState<string[]>(['NVDA', 'AAPL', 'TSLA', 'BTCUSD', 'SPX']);
 
-  // Load bookmarks
+  // Load watchlist
   useEffect(() => {
-    const stored = localStorage.getItem('nyt_saved_articles');
-    if (stored) {
+    const saved = localStorage.getItem('tv_watchlist');
+    if (saved) {
       try {
-        setSavedArticleIds(JSON.parse(stored));
+        setWatchlist(JSON.parse(saved));
       } catch (e) {
         console.error(e);
       }
     }
   }, []);
 
-  const handleToggleBookmark = (id: string) => {
-    setSavedArticleIds(prev => {
-      const next = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
-      localStorage.setItem('nyt_saved_articles', JSON.stringify(next));
+  // Keyboard shortcut: '/' or Ctrl+K to open search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.key === '/' || (e.ctrlKey && e.key === 'k') || (e.metaKey && e.key === 'k')) && !isSearchOpen && !isChartModalOpen) {
+        e.preventDefault();
+        setIsSearchOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isSearchOpen, isChartModalOpen]);
+
+  const handleToggleWatchlist = (sym: string) => {
+    setWatchlist(prev => {
+      const next = prev.includes(sym) ? prev.filter(s => s !== sym) : [...prev, sym];
+      localStorage.setItem('tv_watchlist', JSON.stringify(next));
       return next;
     });
   };
 
-  const handleOpenArticle = (art: Article) => {
-    setActiveArticle(art);
-    setIsArticleModalOpen(true);
+  const handleOpenChart = (sym: MarketSymbol) => {
+    setSelectedChartSymbol(sym);
+    setIsChartModalOpen(true);
   };
 
-  const handlePlayAudio = (title?: string) => {
-    if (title) setAudioTitle(title);
-    setIsAudioBarOpen(true);
+  // Resolve active table dataset
+  const getTableData = () => {
+    switch (activeMarketTab) {
+      case 'stocks':
+      case 'overview':
+        return STOCKS_DATA[activeStockFilter] || STOCKS_DATA['large-cap'];
+      case 'crypto':
+        return CRYPTO_DATA;
+      case 'forex':
+        return FOREX_DATA;
+      case 'commodities':
+        return COMMODITIES_DATA;
+      case 'bonds':
+        return BONDS_DATA;
+      default:
+        return STOCKS_DATA['large-cap'];
+    }
+  };
+
+  const currentTableData = getTableData();
+  const featuredGaugeSymbol = selectedChartSymbol?.symbol || 'NVDA';
+  const featuredGaugeRating = selectedChartSymbol?.rating || 'Strong Buy';
+
+  const themeClasses = {
+    bg: isDark ? 'bg-[#131722] text-[#d1d4dc]' : 'bg-[#f8f9fd] text-[#131722]',
+    headerBg: isDark ? 'bg-[#131722] border-[#2a2e39]' : 'bg-white border-[#e0e3eb]',
+    cardBg: isDark ? 'bg-[#1e222d] border-[#2a2e39]' : 'bg-white border-[#e0e3eb]',
+    subtleBg: isDark ? 'bg-[#131722]' : 'bg-slate-50',
+    border: isDark ? 'border-[#2a2e39]' : 'border-[#e0e3eb]',
+    textMuted: isDark ? 'text-[#787b86]' : 'text-slate-500',
+    textPrimary: isDark ? 'text-white' : 'text-[#131722]',
+    hoverRow: isDark ? 'hover:bg-[#1e222d]' : 'hover:bg-slate-50'
   };
 
   return (
-    <div className="bg-white min-h-screen text-[#121212] antialiased flex flex-col justify-between selection:bg-[#fff2a8] selection:text-black">
-      {/* Top Banner Notice when international edition changes */}
-      {selectedEdition !== 'us' && (
-        <div className="bg-stone-100 text-black py-1.5 px-4 text-xs text-center border-b border-stone-300 flex items-center justify-center space-x-2">
-          <Globe className="w-3.5 h-3.5" />
-          <span>
-            You are viewing the <strong>{selectedEdition.toUpperCase()}</strong> edition.
-          </span>
-          <button
-            onClick={() => setSelectedEdition('us')}
-            className="text-[#326891] underline font-bold ml-2 text-[11px] cursor-pointer"
-          >
-            Switch to U.S.
-          </button>
-        </div>
-      )}
-
-      {/* Breaking News Ticker (Pro Editorial Feature) */}
-      {!breakingDismissed && (
-        <div className="bg-[#121212] text-white py-1.5 px-4 text-xs border-b border-stone-800 flex items-center justify-between">
-          <div className="max-w-[1240px] mx-auto w-full flex items-center justify-between">
-            <div className="flex items-center space-x-3 overflow-hidden">
-              <span className="bg-red-700 text-white font-black text-[9px] uppercase tracking-widest px-1.5 py-0.5 rounded-xs shrink-0">
-                BREAKING
+    <div className={`min-h-screen ${themeClasses.bg} flex flex-col font-sans transition-colors duration-200`}>
+      {/* Top Main Navigation Bar (TradingView Header) */}
+      <header className={`sticky top-0 z-30 border-b ${themeClasses.headerBg} select-none`}>
+        <div className="max-w-[1520px] mx-auto px-4 h-13 flex items-center justify-between gap-4">
+          {/* Left: Brand Logo & Primary Links */}
+          <div className="flex items-center space-x-6">
+            <a href="/" className="flex items-center space-x-2 shrink-0 group">
+              {/* TradingView Icon */}
+              <div className="w-7 h-7 rounded bg-[#2962ff] flex items-center justify-center text-white font-extrabold text-sm tracking-tighter shadow-sm group-hover:scale-105 transition-transform">
+                TV
+              </div>
+              <span className={`font-extrabold text-lg tracking-tight ${themeClasses.textPrimary}`}>
+                TradingView
               </span>
-              <button
-                onClick={() => handleOpenArticle(ARTICLES['ukraine-satellite-restricted'])}
-                className="hover:underline text-left truncate cursor-pointer font-serif text-[13px]"
-              >
-                Attack cuts power to 600,000 in Kyiv as military telemetry faces restrictions.
-              </button>
-            </div>
-            <button
-              onClick={() => setBreakingDismissed(true)}
-              className="text-stone-400 hover:text-white p-1 shrink-0 ml-2"
-              title="Dismiss alert"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-      )}
+            </a>
 
-      {/* BEGIN: SiteHeader */}
-      <header className="w-full max-w-[1240px] mx-auto px-4 pt-2">
-        {/* Top Utility Bar: Search, Editions, Date, Today's Paper & Authentication Actions */}
-        <div className="flex items-center justify-between text-xs py-1.5 border-b border-gray-200 text-[#5a5a5a]" data-purpose="top-utility-bar">
-          {/* Left: Search & Editions */}
-          <div className="flex items-center space-x-4">
-            {/* Search Button */}
-            <button
-              onClick={() => setIsSearchOpen(true)}
-              aria-label="Search"
-              className="flex items-center space-x-1.5 hover:text-black transition cursor-pointer"
-            >
-              <Search className="w-3.5 h-3.5 text-black" />
-              <span className="uppercase tracking-wider font-semibold text-[10px]">Search</span>
-            </button>
-
-            {/* Edition Selector Links */}
-            <nav aria-label="International Editions" className="hidden md:flex items-center space-x-2 text-[11px] font-medium border-l border-gray-300 pl-3">
-              <button
-                onClick={() => setSelectedEdition('us')}
-                className={`transition cursor-pointer ${selectedEdition === 'us' ? 'font-bold text-black border-b border-black' : 'hover:text-black text-gray-600'}`}
-              >
-                U.S.
-              </button>
-              <span className="text-gray-300">|</span>
-              <button
-                onClick={() => setSelectedEdition('international')}
-                className={`transition cursor-pointer ${selectedEdition === 'international' ? 'font-bold text-black border-b border-black' : 'hover:text-black text-gray-600'}`}
-              >
-                International
-              </button>
-              <span className="text-gray-300">|</span>
-              <button
-                onClick={() => setSelectedEdition('canada')}
-                className={`transition cursor-pointer ${selectedEdition === 'canada' ? 'font-bold text-black border-b border-black' : 'hover:text-black text-gray-600'}`}
-              >
-                Canada
-              </button>
-              <span className="text-gray-300">|</span>
-              <button
-                onClick={() => setSelectedEdition('espanol')}
-                className={`transition cursor-pointer ${selectedEdition === 'espanol' ? 'font-bold text-black border-b border-black' : 'hover:text-black text-gray-600'}`}
-              >
-                Español
-              </button>
-              <span className="text-gray-300">|</span>
-              <button
-                onClick={() => setSelectedEdition('chinese')}
-                className={`transition cursor-pointer ${selectedEdition === 'chinese' ? 'font-bold text-black border-b border-black' : 'hover:text-black text-gray-600'}`}
-              >
-                中文
-              </button>
+            <nav className="hidden lg:flex items-center space-x-5 text-xs font-semibold">
+              <a href="#products" className={`${themeClasses.textMuted} hover:${themeClasses.textPrimary} transition`}>
+                Products
+              </a>
+              <a href="#community" className={`${themeClasses.textMuted} hover:${themeClasses.textPrimary} transition`}>
+                Community
+              </a>
+              <a href="#markets" className="text-[#2962ff] border-b-2 border-[#2962ff] py-4">
+                Markets
+              </a>
+              <a href="#news" className={`${themeClasses.textMuted} hover:${themeClasses.textPrimary} transition`}>
+                News
+              </a>
+              <a href="#brokers" className={`${themeClasses.textMuted} hover:${themeClasses.textPrimary} transition`}>
+                Brokers
+              </a>
             </nav>
           </div>
 
-          {/* Right: Live Date Stamp, Subscription CTA and Login */}
-          <div className="flex items-center space-x-3">
-            {/* Date Stamp & Today's Paper Link */}
-            <div className="hidden sm:flex flex-col text-right leading-tight pr-2">
-              <span className="font-bold text-black text-[11px]">Wednesday, October 14, 2026</span>
-              <button
-                onClick={() => setIsTodaysPaperOpen(true)}
-                className="text-[10px] text-[#727272] hover:underline text-right cursor-pointer"
-              >
-                Today’s Paper
-              </button>
-            </div>
-
-            {/* Saved Articles Bookmark shortcut */}
-            <button
-              onClick={() => setIsSavedDrawerOpen(true)}
-              className="p-1 text-gray-500 hover:text-black rounded transition relative flex items-center gap-1 text-[11px] cursor-pointer"
-              title="Saved reading list"
-            >
-              <Bookmark className="w-4 h-4 text-amber-700" fill={savedArticleIds.length > 0 ? 'currentColor' : 'none'} />
-              <span className="hidden sm:inline font-bold tabular-nums">{savedArticleIds.length}</span>
-            </button>
-
-            {/* CTA Subscribe Button */}
-            <button
-              onClick={() => setIsSubscribeOpen(true)}
-              className="bg-[#326891] hover:bg-[#254e6d] text-white px-2.5 py-1 rounded text-[11px] font-bold tracking-wide uppercase transition duration-150 cursor-pointer shadow-2xs"
-            >
-              Subscribe for $1/week
-            </button>
-
-            {/* Log In Button */}
-            <button
-              onClick={() => setIsLoginOpen(true)}
-              className="border border-gray-400 hover:border-black px-2.5 py-1 rounded text-[11px] font-bold text-black transition cursor-pointer"
-            >
-              {userEmail ? 'Account' : 'Log In'}
-            </button>
-          </div>
-        </div>
-
-        {/* Pro Editorial Header: Motto (Left), Masthead (Center), Weather & Financials (Right) */}
-        <div className="pt-3 pb-2 flex flex-col md:flex-row items-center justify-between border-b border-gray-100" data-purpose="masthead-brand">
-          {/* Left: Historic Motto */}
-          <div className="hidden md:block w-48 text-left">
-            <span className="nyt-serif italic text-xs text-[#5a5a5a] block leading-snug">
-              “All the News<br />That’s Fit to Print”
-            </span>
-            <span className="text-[10px] text-stone-400 uppercase tracking-widest font-sans block mt-1">
-              Late Edition
-            </span>
-          </div>
-
-          {/* Center: Iconic Masthead */}
-          <div className="text-center">
-            <a
-              href="/"
-              onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-              className="inline-block hover:opacity-95 transition-opacity"
-              title="The New York Times"
-            >
-              <h1 className="font-masthead text-5xl md:text-7xl lg:text-[76px] tracking-tight leading-none text-black select-none">
-                The New York Times
-              </h1>
-            </a>
-          </div>
-
-          {/* Right: Weather & Financial Indicators */}
-          <div className="hidden md:flex flex-col items-end w-48 text-right text-xs text-[#5a5a5a]">
-            <div className="flex items-center space-x-1.5 font-sans font-medium text-[11px] text-stone-700">
-              <CloudSun className="w-4 h-4 text-amber-500" />
-              <span>New York 68°F</span>
-            </div>
-            <div className="text-[10px] text-stone-500 font-mono tabular-nums mt-0.5 space-x-1.5">
-              <span className="text-emerald-700">S&amp;P +0.4%</span>
-              <span>·</span>
-              <span className="text-emerald-700">Nasdaq +0.7%</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Archival Dateline Strip */}
-        <div className="hidden sm:flex items-center justify-between text-[10px] text-stone-500 uppercase tracking-widest font-sans py-1 border-b border-stone-200">
-          <span>VOL. CLXXV . . . No. 60,314</span>
-          <span>WEDNESDAY, OCTOBER 14, 2026</span>
-          <span>$3.00 PRINT FACSIMILE</span>
-        </div>
-
-        {/* Primary Section Navigation Bar */}
-        <nav className="border-double-bottom pt-1 pb-1.5 mb-1.5 overflow-x-auto no-scrollbar" data-purpose="primary-sections-navigation">
-          <ul className="flex items-center justify-between text-[12px] whitespace-nowrap tracking-tight font-medium text-black px-1 min-w-[760px]">
-            <li>
-              <button
-                onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                className="hover:underline py-1 cursor-pointer font-bold"
-              >
-                U.S.
-              </button>
-            </li>
-            <li>
-              <button
-                onClick={() => handleOpenArticle(ARTICLES['ukraine-satellite-restricted'])}
-                className="hover:underline py-1 cursor-pointer"
-              >
-                World
-              </button>
-            </li>
-            <li>
-              <button
-                onClick={() => handleOpenArticle(ARTICLES['anthropic-revenue'])}
-                className="hover:underline py-1 cursor-pointer"
-              >
-                Business
-              </button>
-            </li>
-            <li>
-              <button
-                onClick={() => handleOpenArticle(ARTICLES['sally-rooney-britain'])}
-                className="hover:underline py-1 cursor-pointer"
-              >
-                Arts
-              </button>
-            </li>
-            <li>
-              <button
-                onClick={() => handleOpenArticle(ARTICLES['the-great-read-shelly'])}
-                className="hover:underline py-1 cursor-pointer"
-              >
-                Lifestyle
-              </button>
-            </li>
-            <li>
-              <a href="#opinion" className="hover:underline py-1 cursor-pointer">
-                Opinion
-              </a>
-            </li>
-            <li>
-              <button
-                onClick={() => handlePlayAudio('The Daily: Special Front-Page Report')}
-                className="hover:underline py-1 cursor-pointer flex items-center gap-1"
-              >
-                <Headphones className="w-3.5 h-3.5 text-black" />
-                <span>Audio</span>
-              </button>
-            </li>
-            <li>
-              <button
-                onClick={() => setIsWordleOpen(true)}
-                className="hover:underline py-1 font-semibold cursor-pointer text-emerald-800"
-              >
-                Games
-              </button>
-            </li>
-            <li>
-              <button
-                onClick={() => setIsCookingOpen(true)}
-                className="hover:underline py-1 font-semibold cursor-pointer text-orange-800"
-              >
-                Cooking
-              </button>
-            </li>
-            <li>
-              <button
-                onClick={() => { setWirecutterSelectedId('wc1'); setIsWirecutterOpen(true); }}
-                className="hover:underline py-1 font-semibold cursor-pointer"
-              >
-                Wirecutter
-              </button>
-            </li>
-            <li>
-              <button
-                onClick={() => setIsTodaysPaperOpen(true)}
-                className="hover:underline py-1 font-semibold cursor-pointer text-[#326891]"
-              >
-                Today’s Paper
-              </button>
-            </li>
-          </ul>
-        </nav>
-
-        {/* Sub-header Alert / Free to read Banner */}
-        {!bannerDismissed && (
-          <div className="py-1 text-center border-b border-gray-200 mb-4 flex items-center justify-center relative">
-            <p className="text-xs text-[#727272]">
-              These top stories are <span className="font-bold text-black">free to read.</span>
-            </p>
-            <button
-              onClick={() => setBannerDismissed(true)}
-              className="absolute right-0 text-gray-400 hover:text-black text-xs px-2 cursor-pointer"
-              title="Dismiss"
-            >
-              ✕
-            </button>
-          </div>
-        )}
-      </header>
-      {/* END: SiteHeader */}
-
-      {/* BEGIN: MainContent */}
-      <main className="w-full max-w-[1240px] mx-auto px-4 grow">
-        {/* Top Grid Layout: 3 Columns Classic Broadsheet Arrangement */}
-        <section className="grid grid-cols-1 md:grid-cols-12 gap-6 pb-6 border-b border-gray-300" data-purpose="top-stories-grid">
-          {/* LEFT COLUMN: Lead Investigative & Breaking (Cols 1-4) */}
-          <article className="md:col-span-4 flex flex-col justify-between pr-0 md:pr-4 md:border-r border-gray-200" data-purpose="lead-left-story">
-            <div>
-              {/* Story 1: Lead Trump Cabinet Departure */}
-              <div className="pb-5 border-b border-gray-200">
-                <div
-                  onClick={() => handleOpenArticle(ARTICLES['trump-women-departures'])}
-                  className="group cursor-pointer"
-                >
-                  <h2 className="nyt-serif text-2xl lg:text-[26px] font-bold leading-tight text-[#121212] group-hover:text-gray-600 transition text-balance">
-                    High-Ranking Women Are Leaving the Trump Administration
-                  </h2>
-                </div>
-                <p className="nyt-serif text-[15px] leading-snug text-[#121212] mt-2">
-                  In the president’s second term, those heading for the exits are female officials, leaving an inner circle dominated by long-serving loyalists.
-                </p>
-                <div className="flex items-center space-x-2 text-[11px] text-[#727272] mt-2">
-                  <span>5 min read</span>
-                  <span>•</span>
-                  <span
-                    onClick={() => handleOpenArticle(ARTICLES['trump-women-departures'])}
-                    className="hover:underline cursor-pointer"
-                  >
-                    Tierney L. Cross / The New York Times
-                  </span>
-                </div>
-              </div>
-
-              {/* Story 2: Secondary Political Fall */}
-              <div className="pt-4">
-                <div
-                  onClick={() => handleOpenArticle(ARTICLES['guilfoyle-fall'])}
-                  className="group cursor-pointer"
-                >
-                  <h3 className="nyt-serif text-lg font-bold leading-snug text-[#121212] group-hover:text-gray-600 transition text-balance">
-                    The Steep Rise and Sudden Fall of Kimberly Guilfoyle
-                  </h3>
-                </div>
-                <p className="nyt-serif text-[13px] leading-snug text-[#5a5a5a] mt-1.5">
-                  An ambitious trajectory from cable news pundit to presidential campaign insider reaches a sharp conclusion amid ambassadorial tensions.
-                </p>
-                <div className="flex items-center space-x-2 text-[11px] text-[#727272] mt-2">
-                  <button
-                    onClick={() => handleOpenArticle(ARTICLES['guilfoyle-fall'])}
-                    className="flex items-center space-x-1 text-[#326891] hover:underline cursor-pointer"
-                  >
-                    <MessageSquare className="w-3 h-3 fill-current" />
-                    <span className="tabular-nums">519 comments</span>
-                  </button>
-                  <span>•</span>
-                  <span>3 min read</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Secondary Opinion Teaser at base of Column 1 */}
-            <div className="mt-6 pt-4 border-t border-gray-200 bg-gray-50 p-3 rounded-sm">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-[#b88b4a]">Election Dispatches</span>
-              <div
-                onClick={() => handleOpenArticle(ARTICLES['texas-senate-race'])}
-                className="block group mt-1 cursor-pointer"
-              >
-                <h4 className="nyt-serif text-sm font-bold text-black group-hover:underline">
-                  Texas Senate Race Tightens, Polls Show, Even as Talarico Keeps His Edge
-                </h4>
-              </div>
-              <span className="text-[11px] text-[#727272] mt-1 block">2 min read</span>
-            </div>
-          </article>
-
-          {/* CENTER COLUMN: Primary Visual & Centerpiece (Cols 5-8) */}
-          <article className="md:col-span-5 flex flex-col justify-between pr-0 md:pr-4 md:border-r border-gray-200" data-purpose="lead-center-story">
-            <div>
-              {/* Featured Editorial Image */}
-              <div
-                onClick={() => handleOpenArticle(ARTICLES['press-secretary-attorney'])}
-                className="overflow-hidden bg-gray-100 cursor-pointer group"
-              >
-                <img
-                  alt="Portrait of official in professional attire with glasses"
-                  referrerPolicy="no-referrer"
-                  className="w-full h-[270px] lg:h-[310px] object-cover object-top group-hover:scale-[1.01] transition duration-300"
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuDnTIWo3IH87Tfr_mdUiywauvtb_zbYRyc2iiXX7dBEowM_p2yoMH3udMA7AfOIjWO7BwBJGSJ48AutaG-RA07rKAYiCyvgc-BbMilnx3EkxTIPlXIYud8wWbfQOVCnbkhsMBYFtZULXL2KuayIbwHVDztwCJ7OuTY9JTZqaTxFdbTPmugDMvHBUV4sreYbdI9xPO7bVBPTJEC7pNXpgya2VwYLr7PU7TqUnu5EQba7_bwA8YPUKLlhHA"
-                />
-                <p className="text-[10px] text-[#727272] text-right pt-1 pb-2">Tierney L. Cross/The New York Times</p>
-              </div>
-
-              {/* Headline and Excerpt */}
-              <div className="mt-2 text-center md:text-left">
-                <div
-                  onClick={() => handleOpenArticle(ARTICLES['press-secretary-attorney'])}
-                  className="group cursor-pointer"
-                >
-                  <h2 className="nyt-serif text-2xl lg:text-[28px] font-bold leading-tight text-[#121212] group-hover:text-gray-600 transition text-balance">
-                    Trump’s New Press Secretary: Not-Quite Attorney at Law
-                  </h2>
-                </div>
-                <p className="nyt-serif text-[15px] leading-relaxed text-[#121212] mt-2">
-                  Katie Zacharia told The New York Times that the confusion over her legal credentials is the result of one big misunderstanding that took place while transitioning between judicial circuits.
-                </p>
-                <div className="flex items-center justify-center md:justify-start space-x-2 text-[11px] text-[#727272] mt-3">
-                  <span>4 min read</span>
-                  <span>•</span>
-                  <button
-                    onClick={() => {
-                      setSelectedEdition('espanol');
-                      handleOpenArticle(ARTICLES['press-secretary-attorney']);
-                    }}
-                    className="text-[#326891] hover:underline cursor-pointer"
-                  >
-                    Read in Español
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Highlight Bullet Points under Center Story */}
-            <div className="mt-6 pt-3 border-t border-gray-200 text-xs">
-              <ul className="space-y-2 nyt-serif text-[13px] text-[#121212] list-disc pl-4">
-                <li>
-                  <button
-                    onClick={() => handleOpenArticle(ARTICLES['trump-women-departures'])}
-                    className="hover:underline text-left cursor-pointer"
-                  >
-                    Jon Ossoff says he’s not running for president, but history says he can change his mind.
-                  </button>
-                </li>
-                <li>
-                  <button
-                    onClick={() => handleOpenArticle(ARTICLES['texas-senate-race'])}
-                    className="hover:underline text-left cursor-pointer"
-                  >
-                    The breathtaking cost of the midterms: $10 billion and counting on ads.
-                  </button>
-                </li>
-              </ul>
-            </div>
-          </article>
-
-          {/* RIGHT COLUMN: International & Fast Breaking News (Cols 9-12) */}
-          <aside className="md:col-span-3 flex flex-col justify-between space-y-4" data-purpose="right-sidebar-coverage">
-            {/* Section: Russia-Ukraine War Cluster */}
-            <div>
-              <div className="border-b border-black pb-1 mb-2.5 flex items-center justify-between">
-                <span className="text-[11px] font-extrabold uppercase tracking-wider text-black">Russia-Ukraine War</span>
-                <span className="text-[10px] text-red-700 font-bold uppercase tracking-wider flex items-center gap-1">
-                  <span>●</span> Developing
-                </span>
-              </div>
-              <div
-                onClick={() => handleOpenArticle(ARTICLES['ukraine-satellite-restricted'])}
-                className="group block mb-2 cursor-pointer"
-              >
-                <h3 className="nyt-serif text-base font-bold leading-snug text-[#121212] group-hover:underline text-balance">
-                  Ukraine’s Exposure Grows as Satellite Use Is Restricted and Russia Escalates
-                </h3>
-              </div>
-              <p className="nyt-serif text-xs leading-normal text-[#5a5a5a]">
-                A huge attack cut power to 600,000 people in Kyiv, and a Pentagon-funded satellite internet program appeared to be curbed without warning.
-              </p>
-              <div className="flex items-center space-x-2 text-[11px] text-[#727272] mt-1.5 pb-3 border-b border-gray-200">
-                <button
-                  onClick={() => handleOpenArticle(ARTICLES['ukraine-satellite-restricted'])}
-                  className="text-[#326891] hover:underline cursor-pointer tabular-nums"
-                >
-                  1.1k comments
-                </button>
-                <span>•</span>
-                <span>4 min read</span>
-              </div>
-
-              {/* Secondary Story in Right Rail */}
-              <div className="pt-3">
-                <div
-                  onClick={() => handleOpenArticle(ARTICLES['trump-diesel-putin'])}
-                  className="group block cursor-pointer"
-                >
-                  <h4 className="nyt-serif text-sm font-bold leading-snug text-[#121212] group-hover:underline text-balance">
-                    Why Trump’s Diesel Deal With Putin Won’t Knock Down High Prices
-                  </h4>
-                </div>
-                <span className="text-[11px] text-[#727272] mt-1 block">4 min read</span>
-              </div>
-
-              <div className="pt-2">
-                <div
-                  onClick={() => handleOpenArticle(ARTICLES['us-intelligence-ukraine'])}
-                  className="group block cursor-pointer"
-                >
-                  <h4 className="nyt-serif text-sm font-bold leading-snug text-[#121212] group-hover:underline text-balance">
-                    The U.S. Continues to Provide Intelligence to Ukraine, Officials Say
-                  </h4>
-                </div>
-                <span className="text-[11px] text-[#727272] mt-1 block">3 min read</span>
-              </div>
-            </div>
-
-            {/* The Evening Briefing Feature Box */}
-            <div className="border-t-2 border-black pt-3 bg-gray-50 p-3 rounded">
-              <span className="text-[10px] font-black uppercase tracking-wider text-[#121212]">The Evening</span>
-              <div
-                onClick={() => handleOpenArticle(ARTICLES['evening-briefing'])}
-                className="group block mt-1 cursor-pointer"
-              >
-                <h4 className="nyt-serif text-base font-bold text-[#121212] group-hover:underline leading-snug text-balance">
-                  Catch Up on Today’s Biggest Stories
-                </h4>
-              </div>
-              <p className="nyt-serif text-xs text-[#5a5a5a] mt-1">
-                Energy prices lift inflation, Ukraine grows more vulnerable and the Texas Senate race tightens.
-              </p>
-              <span className="text-[10px] text-[#727272] mt-2 block font-medium">5 min read • Evgeniy Maloletka / AP</span>
-            </div>
-          </aside>
-        </section>
-
-        {/* Mid-Page Feature Band: Artificial Intelligence & Technology */}
-        <section className="py-6 border-b border-gray-300" data-purpose="ai-and-tech-strip">
-          <div className="flex items-center justify-between pb-2 mb-4 border-b border-black">
-            <h3 className="font-serif text-xl font-bold tracking-tight text-black flex items-center space-x-2">
-              <span>Artificial Intelligence</span>
-              <span className="text-xs font-normal text-[#727272]">| Special Coverage</span>
-            </h3>
+          {/* Center: Global Symbol Search Bar */}
+          <div className="flex-1 max-w-md hidden sm:block">
             <button
               onClick={() => setIsSearchOpen(true)}
-              className="text-xs text-[#326891] hover:underline font-medium cursor-pointer"
+              className={`w-full flex items-center justify-between px-3.5 py-1.5 rounded-full border text-xs cursor-pointer transition ${
+                isDark
+                  ? 'bg-[#1e222d] border-[#2a2e39] text-[#787b86] hover:border-[#363a45] hover:text-[#d1d4dc]'
+                  : 'bg-slate-100 border-[#e0e3eb] text-slate-500 hover:border-slate-300 hover:text-black'
+              }`}
             >
-              Explore All Tech ›
+              <div className="flex items-center space-x-2">
+                <Search className="w-3.5 h-3.5 text-gray-400" />
+                <span>Search markets, stocks, crypto, forex...</span>
+              </div>
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-gray-500/20 text-gray-400">
+                /
+              </span>
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* AI Card 1 */}
-            <div className="space-y-2">
-              <div
-                onClick={() => handleOpenArticle(ARTICLES['ai-dinner-party'])}
-                className="cursor-pointer overflow-hidden group"
-              >
-                <img
-                  alt="Abstract visual representing conversational AI agents"
-                  referrerPolicy="no-referrer"
-                  className="w-full h-40 object-cover rounded-sm mb-2 group-hover:scale-[1.01] transition duration-200"
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuC_CtfAEx5hATYDr7Jl9pvlcP9FAUwfWxoQBvfLCVti-HH7ACbuUpzvu4ojgbLuyXOmpz3aEkzk4Jatr9ZrroRh1BdlPHjn3U7entJggzabLQrZZ94IiIArQRMsiRp7_5YchFGLKo7KmT3hwv3d3rxgN6qXtV9LRP78xdCNpNRZO8fPO09vf91SUVBTIY9a0VsGtXVW1fn2A5TaqX7nYVzPGj6IsUyc1B5zAYide5TctDNAQ89-KQvc1A"
-                />
-                <h4 className="nyt-serif text-lg font-bold leading-snug text-[#121212] group-hover:underline text-balance">
-                  What a Group of A.I. Agents Talked About as Their Humans Had a Dinner Party
-                </h4>
-              </div>
-              <p className="nyt-serif text-xs text-[#5a5a5a] leading-relaxed">
-                As artificial intelligence bots spread, we are increasingly glimpsing how these digital entities interact and what they talk about with one another.
-              </p>
-              <div className="text-[11px] text-[#727272] flex items-center space-x-2">
-                <button
-                  onClick={() => handleOpenArticle(ARTICLES['ai-dinner-party'])}
-                  className="text-[#326891] hover:underline cursor-pointer tabular-nums"
-                >
-                  210 comments
-                </button>
-                <span>•</span>
-                <span>Aaron Fernandez</span>
-              </div>
-            </div>
+          {/* Right: Actions, Watchlist, Theme Toggle & Profile */}
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            {/* Mobile search trigger */}
+            <button
+              onClick={() => setIsSearchOpen(true)}
+              className={`sm:hidden p-2 rounded-lg border ${themeClasses.border} hover:opacity-80`}
+              title="Search"
+            >
+              <Search className="w-4 h-4" />
+            </button>
 
-            {/* AI Card 2 */}
-            <div className="space-y-2">
-              <div
-                onClick={() => handleOpenArticle(ARTICLES['anthropic-revenue'])}
-                className="cursor-pointer overflow-hidden group"
-              >
-                <img
-                  alt="Data charts displaying revenue explosion in tech"
-                  referrerPolicy="no-referrer"
-                  className="w-full h-40 object-cover rounded-sm mb-2 group-hover:scale-[1.01] transition duration-200"
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuD0XT8Z_d4IYrvhlI9QsIch67b_0D_sr9hLFYTkwisStDPiLjAxkblTx7m43yQiaea3wwg0wLEDSs8ecB2Jhccz5FV-UdPxtJd-A-MGmYEBwtjD_Ua2c1l4he99ZelFFhFCunShES9tsvzZNxo9v2MmZXdnNjwXy-gIG3Pks49vdqMZEdC8BPXJQ3QVq-bJNdQpO9SYjSuy9gAat1JmSRy3uqWku0m46aqWjbcEc-N-VWZBdTz1nGnI2w"
-                />
-                <h4 className="nyt-serif text-lg font-bold leading-snug text-[#121212] group-hover:underline text-balance">
-                  Anthropic Says Revenue Jumped 45% to $16.8 Billion in Third Quarter
-                </h4>
-              </div>
-              <p className="nyt-serif text-xs text-[#5a5a5a] leading-relaxed">
-                Enterprise cloud integrations and automated programming models drive unprecedented fiscal surge as public offering expectations mount.
-              </p>
-              <div className="text-[11px] text-[#727272]">
-                <span>3 min read</span>
-              </div>
-            </div>
+            {/* Watchlist toggle button */}
+            <button
+              onClick={() => setIsWatchlistOpen(!isWatchlistOpen)}
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold cursor-pointer transition ${
+                isWatchlistOpen
+                  ? 'bg-[#2962ff] text-white border-[#2962ff]'
+                  : `${themeClasses.border} ${themeClasses.textMuted} hover:${themeClasses.textPrimary}`
+              }`}
+              title="Open Watchlist"
+            >
+              <Star className="w-3.5 h-3.5" fill={isWatchlistOpen ? 'currentColor' : 'none'} />
+              <span className="hidden md:inline">Watchlist</span>
+              <span className="text-[10px] font-mono bg-black/20 px-1 rounded">
+                {watchlist.length}
+              </span>
+            </button>
 
-            {/* AI Card 3: Deep Analysis & Links */}
-            <div className="bg-gray-50 p-4 border border-gray-200 rounded-sm flex flex-col justify-between">
-              <div>
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#121212] block mb-2">
-                  In the News &amp; Field Reports
-                </span>
-                <ul className="nyt-serif text-xs space-y-3 divide-y divide-gray-200">
-                  {FIELD_REPORTS.map(fr => (
-                    <li key={fr.id} className="pt-2">
-                      <button
-                        onClick={() => handleOpenArticle(ARTICLES['ai-dinner-party'])}
-                        className="hover:underline font-semibold text-left block text-[#121212] cursor-pointer"
-                      >
-                        {fr.title}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="pt-4 border-t border-gray-200 mt-2">
-                <button
-                  onClick={() => setIsTechTipOpen(true)}
-                  className="w-full text-xs font-bold text-[#326891] hover:underline flex items-center justify-between cursor-pointer"
-                >
-                  <span>Got a confidential tech tip?</span>
-                  <span>Submit info ›</span>
-                </button>
-              </div>
+            {/* Theme Toggle (Dark / Light) */}
+            <button
+              onClick={() => setIsDark(!isDark)}
+              className={`p-2 rounded-lg border cursor-pointer transition ${themeClasses.border} ${themeClasses.textMuted} hover:${themeClasses.textPrimary}`}
+              title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-700" />}
+            </button>
+
+            {/* Sign in / Get started */}
+            <button
+              onClick={() => alert("TradingView Pro: Real-time data, custom screeners, and multi-chart layouts.")}
+              className="bg-[#2962ff] hover:bg-[#1e53e5] text-white text-xs font-bold px-3.5 py-1.5 rounded-full transition shadow-xs cursor-pointer whitespace-nowrap"
+            >
+              Get started
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Real-time Ticker Tape Bar */}
+      <TickerTape onSelectSymbol={handleOpenChart} isDark={isDark} />
+
+      {/* Main Markets Container */}
+      <main className="flex-1 max-w-[1520px] w-full mx-auto px-4 py-6 space-y-6">
+        {/* Markets Header & Breadcrumb */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center space-x-2 text-xs text-[#787b86] mb-1 font-mono">
+              <span>Markets</span>
+              <span>/</span>
+              <span className="text-[#2962ff] uppercase font-bold">{selectedRegion}</span>
             </div>
+            <h1 className={`text-2xl sm:text-3xl font-extrabold tracking-tight ${themeClasses.textPrimary}`}>
+              Markets overview
+            </h1>
+            <p className={`text-xs mt-1 ${themeClasses.textMuted}`}>
+              Track world financial markets in real time with high-density quotes, charts, and technical signals.
+            </p>
+          </div>
+
+          {/* Region Tabs (US, Europe, Asia, World) */}
+          <div className={`flex rounded-lg p-1 border text-xs font-semibold ${themeClasses.cardBg}`}>
+            {[
+              { id: 'us', label: 'United States' },
+              { id: 'europe', label: 'Europe' },
+              { id: 'asia', label: 'Asia' },
+              { id: 'world', label: 'World' }
+            ].map(r => (
+              <button
+                key={r.id}
+                onClick={() => setSelectedRegion(r.id as any)}
+                className={`px-3 py-1 rounded-md transition cursor-pointer ${
+                  selectedRegion === r.id
+                    ? 'bg-[#2962ff] text-white'
+                    : `${themeClasses.textMuted} hover:${themeClasses.textPrimary}`
+                }`}
+              >
+                {r.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Major Global Indices Grid (Signature TradingView Cards) */}
+        <section>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className={`text-sm font-bold uppercase tracking-wider ${themeClasses.textPrimary}`}>
+              Major Indices
+            </h2>
+            <span className="text-xs text-[#787b86] font-mono">Real-time quotes</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+            {MAJOR_INDICES.map(idx => {
+              const isPos = idx.change >= 0;
+              return (
+                <div
+                  key={idx.symbol}
+                  onClick={() => handleOpenChart(idx)}
+                  className={`p-3.5 rounded-lg border cursor-pointer group transition-all duration-150 hover:scale-[1.02] ${themeClasses.cardBg} hover:border-[#2962ff]`}
+                >
+                  <div className="flex items-center justify-between text-xs mb-1">
+                    <span className="font-bold text-white group-hover:text-[#2962ff] transition">
+                      {idx.symbol}
+                    </span>
+                    <span className="text-[10px] text-[#787b86] uppercase font-mono">{idx.exchange}</span>
+                  </div>
+                  <div className={`text-[11px] truncate mb-2 ${themeClasses.textMuted}`}>
+                    {idx.name}
+                  </div>
+
+                  <div className="font-mono-num mb-3">
+                    <div className={`text-lg font-extrabold ${themeClasses.textPrimary}`}>
+                      {idx.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                    <div className={`text-xs font-bold flex items-center space-x-1 ${isPos ? 'text-[#089981]' : 'text-[#f23645]'}`}>
+                      {isPos ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
+                      <span>{isPos ? '+' : ''}{idx.change.toFixed(2)} ({isPos ? '+' : ''}{idx.changePercent.toFixed(2)}%)</span>
+                    </div>
+                  </div>
+
+                  {/* Sparkline chart */}
+                  <div className="w-full flex justify-end">
+                    <SparklineChart data={idx.sparkline} isPositive={isPos} width={130} height={32} />
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </section>
 
-        {/* Lower Grid: Opinion Columns, Culture, Games & Wirecutter */}
-        <section id="opinion" className="py-6 grid grid-cols-1 md:grid-cols-12 gap-6" data-purpose="editorial-lifestyle-grid">
-          {/* OPINION COLUMN (Left Cols 1-5) */}
-          <div className="md:col-span-5 pr-0 md:pr-4 md:border-r border-gray-200" data-purpose="opinion-section">
-            <div className="border-b border-black pb-1 mb-4 flex items-center justify-between">
-              <h3 className="nyt-serif text-xl font-black text-black">Opinion</h3>
+        {/* Primary Markets Layout: Table (Left 8-9 cols) & Side Intelligence (Right 3-4 cols) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* Main Left Section: Market Movers & Asset Class Tabs */}
+          <div className="lg:col-span-8 xl:col-span-9 space-y-4">
+            {/* Asset Class Filter Tabs */}
+            <div className={`border-b flex items-center space-x-6 overflow-x-auto text-xs font-bold ${themeClasses.border}`}>
+              {[
+                { id: 'overview', label: 'Stocks Overview' },
+                { id: 'crypto', label: 'Cryptocurrency' },
+                { id: 'forex', label: 'Currencies & Forex' },
+                { id: 'commodities', label: 'Commodities & Energy' },
+                { id: 'bonds', label: 'Bonds & Yields' }
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveMarketTab(tab.id as any)}
+                  className={`pb-3 whitespace-nowrap transition cursor-pointer border-b-2 ${
+                    activeMarketTab === tab.id
+                      ? 'border-[#2962ff] text-[#2962ff]'
+                      : `border-transparent ${themeClasses.textMuted} hover:${themeClasses.textPrimary}`
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Sub-Filters for Stocks */}
+            {(activeMarketTab === 'overview' || activeMarketTab === 'stocks') && (
+              <div className="flex items-center space-x-2 text-xs">
+                {[
+                  { id: 'large-cap', label: 'Large Cap' },
+                  { id: 'top-gainers', label: 'Top Gainers' },
+                  { id: 'top-losers', label: 'Top Losers' },
+                  { id: 'most-active', label: 'Most Active' }
+                ].map(filter => (
+                  <button
+                    key={filter.id}
+                    onClick={() => setActiveStockFilter(filter.id as any)}
+                    className={`px-3 py-1 rounded-md text-xs font-semibold transition cursor-pointer ${
+                      activeStockFilter === filter.id
+                        ? 'bg-[#2962ff] text-white shadow-xs'
+                        : `${themeClasses.cardBg} border ${themeClasses.textMuted} hover:${themeClasses.textPrimary}`
+                    }`}
+                  >
+                    {filter.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* High-Density Data Grid (Signature TradingView Table) */}
+            <div className={`rounded-lg border overflow-hidden ${themeClasses.cardBg}`}>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className={`border-b text-[11px] font-semibold text-[#787b86] ${themeClasses.subtleBg}`}>
+                      <th className="py-2.5 px-4 font-normal">Symbol</th>
+                      <th className="py-2.5 px-4 text-right font-normal">Last Price</th>
+                      <th className="py-2.5 px-4 text-right font-normal">Change</th>
+                      <th className="py-2.5 px-4 text-right font-normal">Change %</th>
+                      <th className="py-2.5 px-4 text-center font-normal">Technical Rating</th>
+                      <th className="py-2.5 px-4 text-right font-normal hidden sm:table-cell">Volume</th>
+                      <th className="py-2.5 px-4 text-right font-normal hidden md:table-cell">Market Cap</th>
+                      <th className="py-2.5 px-4 text-center font-normal hidden lg:table-cell">Trend</th>
+                      <th className="py-2.5 px-3 text-center font-normal w-12">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-500/10 font-mono-num">
+                    {currentTableData.map(item => {
+                      const isPos = item.change >= 0;
+                      const isWatch = watchlist.includes(item.symbol);
+
+                      return (
+                        <tr
+                          key={item.symbol}
+                          onClick={() => handleOpenChart(item)}
+                          className={`cursor-pointer transition duration-150 ${themeClasses.hoverRow}`}
+                        >
+                          {/* Symbol & Name */}
+                          <td className="py-3 px-4">
+                            <div className="flex items-center space-x-2.5">
+                              <div className="w-7 h-7 rounded-full bg-gray-500/15 flex items-center justify-center font-bold text-[11px] text-[#2962ff] shrink-0">
+                                {item.symbol.slice(0, 2)}
+                              </div>
+                              <div className="flex flex-col truncate max-w-[140px] sm:max-w-xs">
+                                <span className={`font-bold font-sans ${themeClasses.textPrimary}`}>
+                                  {item.symbol}
+                                </span>
+                                <span className="text-[11px] text-[#787b86] font-sans truncate">
+                                  {item.name}
+                                </span>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Price */}
+                          <td className={`py-3 px-4 text-right font-bold font-sans ${themeClasses.textPrimary}`}>
+                            ${item.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: item.price < 2 ? 4 : 2 })}
+                          </td>
+
+                          {/* Change $ */}
+                          <td className={`py-3 px-4 text-right font-bold ${isPos ? 'text-[#089981]' : 'text-[#f23645]'}`}>
+                            {isPos ? '+' : ''}{item.change.toFixed(item.price < 2 ? 4 : 2)}
+                          </td>
+
+                          {/* Change % */}
+                          <td className={`py-3 px-4 text-right font-bold ${isPos ? 'text-[#089981]' : 'text-[#f23645]'}`}>
+                            <span className={`inline-block px-1.5 py-0.5 rounded text-[11px] ${
+                              isPos ? 'bg-[#089981]/15 text-[#089981]' : 'bg-[#f23645]/15 text-[#f23645]'
+                            }`}>
+                              {isPos ? '+' : ''}{item.changePercent.toFixed(2)}%
+                            </span>
+                          </td>
+
+                          {/* Technical Rating */}
+                          <td className="py-3 px-4 text-center">
+                            <span
+                              className={`text-[10px] font-sans font-bold px-2 py-0.5 rounded uppercase tracking-wide ${
+                                item.rating === 'Strong Buy'
+                                  ? 'bg-[#089981]/20 text-[#089981]'
+                                  : item.rating === 'Buy'
+                                  ? 'bg-[#089981]/15 text-[#089981]'
+                                  : item.rating === 'Neutral'
+                                  ? 'bg-gray-500/20 text-[#787b86]'
+                                  : 'bg-[#f23645]/20 text-[#f23645]'
+                              }`}
+                            >
+                              {item.rating}
+                            </span>
+                          </td>
+
+                          {/* Volume */}
+                          <td className="py-3 px-4 text-right text-[#787b86] hidden sm:table-cell">
+                            {item.volume || '—'}
+                          </td>
+
+                          {/* Market Cap */}
+                          <td className="py-3 px-4 text-right text-[#787b86] hidden md:table-cell">
+                            {item.marketCap || '—'}
+                          </td>
+
+                          {/* Sparkline */}
+                          <td className="py-3 px-4 text-center hidden lg:table-cell">
+                            <div className="flex justify-center">
+                              <SparklineChart data={item.sparkline} isPositive={isPos} width={80} height={22} />
+                            </div>
+                          </td>
+
+                          {/* Actions */}
+                          <td className="py-3 px-3 text-center">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleToggleWatchlist(item.symbol);
+                              }}
+                              className={`p-1.5 rounded hover:bg-gray-500/20 transition ${
+                                isWatch ? 'text-amber-400' : 'text-gray-500 hover:text-white'
+                              }`}
+                              title={isWatch ? 'Remove from Watchlist' : 'Add to Watchlist'}
+                            >
+                              <Star className="w-3.5 h-3.5" fill={isWatch ? 'currentColor' : 'none'} />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Sector Heatmap & Performance Strips */}
+            <div className={`p-5 rounded-lg border space-y-4 ${themeClasses.cardBg}`}>
+              <div className="flex items-center justify-between border-b pb-2 border-gray-500/20">
+                <div className="flex items-center space-x-2">
+                  <Layers className="w-4 h-4 text-[#2962ff]" />
+                  <h3 className={`text-xs font-bold uppercase tracking-wider ${themeClasses.textPrimary}`}>
+                    U.S. Sectors Performance (S&amp;P 500)
+                  </h3>
+                </div>
+                <span className="text-xs text-[#787b86] font-mono">1D Performance</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {SECTORS.map(sec => {
+                  const isPos = sec.changePercent >= 0;
+                  return (
+                    <div
+                      key={sec.name}
+                      onClick={() => handleOpenChart({
+                        symbol: sec.symbol,
+                        name: `${sec.name} ETF`,
+                        exchange: 'AMEX',
+                        category: 'index',
+                        price: 120.50,
+                        change: sec.changePercent * 1.2,
+                        changePercent: sec.changePercent,
+                        rating: isPos ? 'Buy' : 'Sell',
+                        sparkline: [118, 119, 120.5]
+                      })}
+                      className={`p-2.5 rounded-lg border cursor-pointer hover:border-[#2962ff] transition flex items-center justify-between ${
+                        isDark ? 'bg-[#131722] border-[#2a2e39]' : 'bg-slate-50 border-[#e0e3eb]'
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center space-x-1.5">
+                          <span className="font-bold text-xs text-white">{sec.symbol}</span>
+                          <span className="text-[11px] text-[#787b86] truncate max-w-[130px]">{sec.name}</span>
+                        </div>
+                        <span className="text-[10px] text-gray-500 block">Top: {sec.topStock}</span>
+                      </div>
+
+                      <div className="text-right font-mono-num">
+                        <span
+                          className={`text-xs font-bold px-2 py-0.5 rounded ${
+                            isPos ? 'bg-[#089981]/20 text-[#089981]' : 'bg-[#f23645]/20 text-[#f23645]'
+                          }`}
+                        >
+                          {isPos ? '+' : ''}{sec.changePercent.toFixed(2)}%
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Rail: Technical Gauge & Economic Calendar (TradingView Widgets) */}
+          <aside className="lg:col-span-4 xl:col-span-3 space-y-5">
+            {/* Technical Analysis Gauge */}
+            <TechnicalGauge
+              symbol={featuredGaugeSymbol}
+              rating={featuredGaugeRating}
+              isDark={isDark}
+            />
+
+            {/* Economic Calendar Widget */}
+            <div className={`p-4 rounded-lg border space-y-3 ${themeClasses.cardBg}`}>
+              <div className="flex items-center justify-between border-b pb-2 border-gray-500/20">
+                <div className="flex items-center space-x-2">
+                  <Calendar className="w-4 h-4 text-[#2962ff]" />
+                  <h4 className={`text-xs font-bold uppercase tracking-wider ${themeClasses.textPrimary}`}>
+                    Economic Calendar
+                  </h4>
+                </div>
+                <span className="text-[10px] text-[#089981] font-bold uppercase tracking-wide">Live</span>
+              </div>
+
+              <div className="divide-y divide-gray-500/10 space-y-2.5 text-xs">
+                {ECONOMIC_EVENTS.map((evt, i) => (
+                  <div key={i} className="pt-2 flex items-start justify-between">
+                    <div>
+                      <div className="flex items-center space-x-1.5 text-[10px] font-mono text-[#787b86]">
+                        <span>{evt.time}</span>
+                        <span>•</span>
+                        <span className="font-bold text-white">{evt.currency}</span>
+                        <span>•</span>
+                        <span
+                          className={`font-bold ${
+                            evt.impact === 'High' ? 'text-red-400' : 'text-amber-400'
+                          }`}
+                        >
+                          {evt.impact}
+                        </span>
+                      </div>
+                      <span className={`font-semibold block mt-0.5 text-[11px] leading-snug ${themeClasses.textPrimary}`}>
+                        {evt.title}
+                      </span>
+                    </div>
+
+                    <div className="text-right font-mono-num text-[11px] shrink-0 ml-2">
+                      <span className="text-emerald-400 font-bold block">{evt.actual}</span>
+                      <span className="text-[10px] text-gray-500 block">F: {evt.forecast}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* TradingView Promo / Broker Integration Box */}
+            <div className="p-4 rounded-lg border border-[#2962ff]/30 bg-[#2962ff]/10 text-xs space-y-2">
+              <span className="text-[10px] font-black uppercase tracking-wider text-[#2962ff] block">
+                Trade on TradingView
+              </span>
+              <p className="font-bold text-white text-sm">
+                Connect your brokerage account to trade directly from charts.
+              </p>
+              <p className="text-[11px] text-gray-400">
+                Execute stocks, forex, and crypto orders with real-time level 2 data.
+              </p>
               <button
-                onClick={() => handleOpenArticle(ARTICLES['opinion-democrats'])}
-                className="text-xs text-[#326891] hover:underline font-semibold cursor-pointer"
+                onClick={() => alert("Broker Connection: Select from 50+ integrated partners including Interactive Brokers, TradeStation, and Binance.")}
+                className="w-full bg-[#2962ff] hover:bg-[#2962ff]/85 text-white font-bold py-2 rounded text-xs transition cursor-pointer"
               >
-                All Columnists ›
+                Connect Broker
               </button>
             </div>
-            <div className="space-y-4">
-              {/* Opinion Essay 1 */}
-              <article className="border-b border-gray-200 pb-3">
-                <span className="text-xs font-bold text-black uppercase tracking-wide">David Wallace-Wells</span>
-                <div
-                  onClick={() => handleOpenArticle(ARTICLES['opinion-democrats'])}
-                  className="group block mt-0.5 cursor-pointer"
-                >
-                  <h4 className="nyt-serif text-lg font-bold leading-tight text-[#121212] group-hover:underline text-balance">
-                    Democrats Shouldn’t Wait Two More Years
-                  </h4>
-                </div>
-                <p className="nyt-serif text-xs text-[#5a5a5a] mt-1">
-                  Waiting for national political conditions to reset spontaneously is a strategy designed for continuous legislative frustration.
-                </p>
-                <button
-                  onClick={() => handleOpenArticle(ARTICLES['opinion-democrats'])}
-                  className="text-[11px] text-[#326891] mt-1 inline-block hover:underline cursor-pointer tabular-nums"
-                >
-                  388 comments
-                </button>
-              </article>
-
-              {/* Opinion Essay 2 */}
-              <article className="border-b border-gray-200 pb-3">
-                <span className="text-xs font-bold text-black uppercase tracking-wide">Heather Kerr</span>
-                <div
-                  onClick={() => handleOpenArticle(ARTICLES['opinion-ebola'])}
-                  className="group block mt-0.5 cursor-pointer"
-                >
-                  <h4 className="nyt-serif text-base font-bold leading-tight text-[#121212] group-hover:underline text-balance">
-                    I’ve Never Seen Ebola Spread Like This
-                  </h4>
-                </div>
-                <span className="text-[11px] text-[#727272] mt-1 block">Guest Essay • 4 min read</span>
-              </article>
-
-              {/* Opinion Essay 3 */}
-              <article className="border-b border-gray-200 pb-3">
-                <span className="text-xs font-bold text-black uppercase tracking-wide">Carlos Lozada</span>
-                <div
-                  onClick={() => handleOpenArticle(ARTICLES['opinion-manifestoes'])}
-                  className="group block mt-0.5 cursor-pointer"
-                >
-                  <h4 className="nyt-serif text-base font-bold leading-tight text-[#121212] group-hover:underline text-balance">
-                    A Manifesto to End All Manifestoes
-                  </h4>
-                </div>
-                <span className="text-[11px] text-[#326891] mt-1 inline-block tabular-nums">69 comments</span>
-              </article>
-
-              {/* Opinion Essay 4 */}
-              <article>
-                <span className="text-xs font-bold text-black uppercase tracking-wide">Jayson Greene</span>
-                <div
-                  onClick={() => handleOpenArticle(ARTICLES['opinion-tom-cruise'])}
-                  className="group block mt-0.5 cursor-pointer"
-                >
-                  <h4 className="nyt-serif text-base font-bold leading-tight text-[#121212] group-hover:underline text-balance">
-                    Tom Cruise’s Big Flop Is a Secret Masterpiece
-                  </h4>
-                </div>
-                <span className="text-[11px] text-[#727272] mt-1 block">5 min read</span>
-              </article>
-            </div>
-          </div>
-
-          {/* CULTURE & INVESTIGATIONS (Center Cols 6-8) */}
-          <div className="md:col-span-4 pr-0 md:pr-4 md:border-r border-gray-200 space-y-5" data-purpose="culture-and-great-read">
-            <div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-[#b88b4a]">The Great Read</span>
-              <div
-                onClick={() => handleOpenArticle(ARTICLES['the-great-read-shelly'])}
-                className="group block mt-1 cursor-pointer"
-              >
-                <h3 className="nyt-serif text-xl font-bold leading-tight text-[#121212] group-hover:underline text-balance">
-                  Coming Out at 50 Can Be Hard. Shelly Found a Coach.
-                </h3>
-              </div>
-              <p className="nyt-serif text-xs text-[#5a5a5a] mt-2 leading-relaxed">
-                She spent decades building an identity as a wife and mother. Could she disrupt “a perfectly good family dynamic” to live her own truth?
-              </p>
-              <span className="text-[11px] text-[#727272] mt-1 block">Sophie Park for The New York Times • 259 comments</span>
-            </div>
-
-            <div className="border-t border-gray-200 pt-4">
-              <span className="text-[10px] font-black uppercase tracking-widest text-black">New York Region</span>
-              <div
-                onClick={() => handleOpenArticle(ARTICLES['battle-the-pierre'])}
-                className="group block mt-1 cursor-pointer"
-              >
-                <h4 className="nyt-serif text-base font-bold text-[#121212] group-hover:underline text-balance">
-                  Battle Over the Pierre Ends in Defeat for the Buyer Pushed by Lutnick
-                </h4>
-              </div>
-              <p className="nyt-serif text-xs text-[#5a5a5a] mt-1">
-                Motasem Khashoggi missed a deadline to make a deposit to purchase the famed Manhattan apartment building.
-              </p>
-            </div>
-
-            <div className="border-t border-gray-200 pt-3">
-              <div
-                onClick={() => handleOpenArticle(ARTICLES['sally-rooney-britain'])}
-                className="group block cursor-pointer"
-              >
-                <h4 className="nyt-serif text-sm font-bold text-[#121212] group-hover:underline text-balance">
-                  Sally Rooney Says Her Novels Will No Longer Be Sold in Britain
-                </h4>
-              </div>
-              <span className="text-[11px] text-[#727272] mt-0.5 block">3 min read • Ellius Grace for NYT</span>
-            </div>
-          </div>
-
-          {/* GAMES & WIRECUTTER WIDGETS (Right Cols 9-12) */}
-          <div className="md:col-span-3 space-y-6" data-purpose="lifestyle-services">
-            {/* Games Mini-Hub */}
-            <div className="border border-gray-200 rounded p-3 bg-gray-50">
-              <div className="flex items-center justify-between border-b border-gray-200 pb-2 mb-3">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-black">NYT Games</h4>
-                <button
-                  onClick={() => setIsWordleOpen(true)}
-                  className="text-[11px] text-[#326891] hover:underline cursor-pointer"
-                >
-                  All Games ›
-                </button>
-              </div>
-              <div className="grid grid-cols-2 gap-2 text-center text-xs">
-                {/* WORDLE */}
-                <button
-                  onClick={() => setIsWordleOpen(true)}
-                  className="p-2.5 bg-white border border-gray-200 rounded hover:shadow-sm hover:border-gray-400 transition text-left cursor-pointer"
-                >
-                  <span className="font-black text-sm block tracking-wide text-black">WORDLE</span>
-                  <span className="text-[10px] text-[#727272]">Guess the 5-letter word</span>
-                </button>
-
-                {/* CONNECTIONS */}
-                <button
-                  onClick={() => setIsConnectionsOpen(true)}
-                  className="p-2.5 bg-white border border-gray-200 rounded hover:shadow-sm hover:border-gray-400 transition text-left cursor-pointer"
-                >
-                  <span className="font-black text-sm block tracking-wide text-black">CONNECTIONS</span>
-                  <span className="text-[10px] text-[#727272]">Group common threads</span>
-                </button>
-
-                {/* SPELLING BEE */}
-                <button
-                  onClick={() => setIsSpellingBeeOpen(true)}
-                  className="p-2.5 bg-white border border-gray-200 rounded hover:shadow-sm hover:border-gray-400 transition text-left cursor-pointer"
-                >
-                  <span className="font-black text-sm block tracking-wide text-black">SPELLING BEE</span>
-                  <span className="text-[10px] text-[#727272]">Make words with 7 letters</span>
-                </button>
-
-                {/* THE MINI */}
-                <button
-                  onClick={() => setIsMiniOpen(true)}
-                  className="p-2.5 bg-white border border-gray-200 rounded hover:shadow-sm hover:border-gray-400 transition text-left cursor-pointer"
-                >
-                  <span className="font-black text-sm block tracking-wide text-black">THE MINI</span>
-                  <span className="text-[10px] text-[#727272]">Bite-sized crossword</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Wirecutter Recommendations Mini-Hub */}
-            <div className="border border-gray-200 rounded p-3">
-              <div className="flex items-center justify-between border-b border-gray-200 pb-2 mb-2">
-                <span className="text-xs font-bold tracking-wider uppercase text-black">Wirecutter</span>
-                <span className="text-[10px] text-[#727272]">Tested &amp; Trusted</span>
-              </div>
-              <ul className="nyt-serif text-xs space-y-2 text-[#121212]">
-                {WIRECUTTER_ITEMS.map(item => (
-                  <li key={item.id}>
-                    <button
-                      onClick={() => {
-                        setWirecutterSelectedId(item.id);
-                        setIsWirecutterOpen(true);
-                      }}
-                      className="w-full hover:underline flex items-center justify-between text-left cursor-pointer"
-                    >
-                      <span>{item.title}</span>
-                      <span className="text-[10px] text-gray-400">›</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Cooking Quick Teaser */}
-            <div className="border-t border-gray-200 pt-3">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-orange-800">NYT Cooking</span>
-              <div
-                onClick={() => setIsCookingOpen(true)}
-                className="group block mt-1 cursor-pointer"
-              >
-                <h5 className="nyt-serif text-sm font-bold text-black group-hover:underline">
-                  Meatballs With Any Meat: The Flexible Weeknight Dinner Formula
-                </h5>
-              </div>
-            </div>
-          </div>
-        </section>
-      </main>
-      {/* END: MainContent */}
-
-      {/* BEGIN: SiteFooter */}
-      <footer className="w-full max-w-[1240px] mx-auto px-4 mt-10 pt-6 border-t-2 border-black" data-purpose="site-footer">
-        {/* Footer Brand and Nav Links */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between pb-6 border-b border-gray-200">
-          <a
-            href="/"
-            onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-            className="font-masthead text-3xl text-black select-none hover:opacity-80"
-          >
-            The New York Times
-          </a>
-          <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-[#121212] font-medium mt-3 md:mt-0">
-            <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="hover:underline cursor-pointer">
-              News
-            </button>
-            <a href="#opinion" className="hover:underline cursor-pointer">
-              Opinion
-            </a>
-            <button onClick={() => handleOpenArticle(ARTICLES['sally-rooney-britain'])} className="hover:underline cursor-pointer">
-              Arts
-            </button>
-            <button onClick={() => handleOpenArticle(ARTICLES['the-great-read-shelly'])} className="hover:underline cursor-pointer">
-              Living
-            </button>
-            <button onClick={() => handleOpenArticle(ARTICLES['battle-the-pierre'])} className="hover:underline cursor-pointer">
-              Listings &amp; More
-            </button>
-            <button onClick={() => setIsCookingOpen(true)} className="hover:underline font-semibold text-orange-800 cursor-pointer">
-              Cooking
-            </button>
-            <button onClick={() => { setWirecutterSelectedId('wc1'); setIsWirecutterOpen(true); }} className="hover:underline font-semibold cursor-pointer">
-              Wirecutter
-            </button>
-            <button onClick={() => setIsTodaysPaperOpen(true)} className="hover:underline font-semibold text-[#326891] cursor-pointer">
-              Today’s Paper
-            </button>
-            <button onClick={() => setIsWordleOpen(true)} className="hover:underline font-semibold text-emerald-800 cursor-pointer">
-              Games
-            </button>
-          </div>
+          </aside>
         </div>
+      </main>
 
-        {/* Copyright & Legal Sub-footer */}
-        <div className="py-4 text-[11px] text-[#727272] flex flex-col md:flex-row items-center justify-between space-y-2 md:space-y-0">
-          <div>
-            <p>© 2026 The New York Times Company</p>
+      {/* TradingView Global Footer */}
+      <footer className={`border-t py-8 px-4 mt-12 text-xs select-none ${themeClasses.headerBg}`}>
+        <div className="max-w-[1520px] mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center space-x-3">
+            <div className="w-6 h-6 rounded bg-[#2962ff] flex items-center justify-center text-white font-extrabold text-xs">
+              TV
+            </div>
+            <span className={`font-bold text-sm ${themeClasses.textPrimary}`}>TradingView</span>
+            <span className="text-gray-500">|</span>
+            <span className="text-gray-500 text-[11px]">Look first / Then leap.</span>
           </div>
-          <nav aria-label="Footer Legal Links" className="flex flex-wrap items-center justify-center gap-x-3 text-[11px]">
-            <button onClick={() => setIsTodaysPaperOpen(true)} className="hover:underline cursor-pointer">NYTCo</button>
-            <button onClick={() => setIsTechTipOpen(true)} className="hover:underline cursor-pointer">Contact Us</button>
-            <button onClick={() => setIsSubscribeOpen(true)} className="hover:underline cursor-pointer">Subscriptions</button>
-            <button onClick={() => alert("Accessibility Statement")} className="hover:underline cursor-pointer">Accessibility</button>
-            <button onClick={() => alert("Work with us")} className="hover:underline cursor-pointer">Careers</button>
-            <button onClick={() => alert("Advertise with NYT")} className="hover:underline cursor-pointer">Advertise</button>
-            <button onClick={() => alert("Privacy Policy")} className="hover:underline cursor-pointer">Privacy Policy</button>
-            <button onClick={() => alert("Terms of Service")} className="hover:underline cursor-pointer">Terms of Service</button>
-            <button onClick={() => alert("Site Map Directory")} className="hover:underline cursor-pointer">Site Map</button>
-          </nav>
+
+          <div className="flex flex-wrap items-center justify-center gap-4 text-[#787b86]">
+            <a href="#overview" className="hover:text-white transition">Markets</a>
+            <a href="#stocks" className="hover:text-white transition">Screeners</a>
+            <a href="#community" className="hover:text-white transition">Pine Script</a>
+            <a href="#calendar" className="hover:text-white transition">Economic Calendar</a>
+            <a href="#privacy" className="hover:text-white transition">Privacy Policy</a>
+            <a href="#terms" className="hover:text-white transition">Terms of Service</a>
+          </div>
+
+          <span className="text-gray-500 text-[11px] font-mono">
+            © 2026 TradingView Inc. All rights reserved.
+          </span>
         </div>
       </footer>
-      {/* END: SiteFooter */}
 
-      {/* ALL MODALS AND DRAWERS */}
-      <ArticleModal
-        article={activeArticle}
-        isOpen={isArticleModalOpen}
-        onClose={() => setIsArticleModalOpen(false)}
-        isBookmarked={activeArticle ? savedArticleIds.includes(activeArticle.id) : false}
-        onToggleBookmark={handleToggleBookmark}
-        onOpenArticle={handleOpenArticle}
+      {/* MODALS AND SIDEBARS */}
+      <InteractiveChartModal
+        symbol={selectedChartSymbol}
+        isOpen={isChartModalOpen}
+        onClose={() => setIsChartModalOpen(false)}
+        isDark={isDark}
+        onToggleWatchlist={handleToggleWatchlist}
+        isWatchlisted={selectedChartSymbol ? watchlist.includes(selectedChartSymbol.symbol) : false}
       />
 
-      <TodaysPaperModal
-        isOpen={isTodaysPaperOpen}
-        onClose={() => setIsTodaysPaperOpen(false)}
-        onSelectArticle={handleOpenArticle}
-      />
-
-      <WordleModal
-        isOpen={isWordleOpen}
-        onClose={() => setIsWordleOpen(false)}
-      />
-
-      <MiniCrosswordModal
-        isOpen={isMiniOpen}
-        onClose={() => setIsMiniOpen(false)}
-      />
-
-      <ConnectionsModal
-        isOpen={isConnectionsOpen}
-        onClose={() => setIsConnectionsOpen(false)}
-      />
-
-      <SpellingBeeModal
-        isOpen={isSpellingBeeOpen}
-        onClose={() => setIsSpellingBeeOpen(false)}
-      />
-
-      <SearchModal
+      <SymbolSearchModal
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
-        onSelectArticle={handleOpenArticle}
+        onSelectSymbol={handleOpenChart}
+        isDark={isDark}
       />
 
-      <SubscribeModal
-        isOpen={isSubscribeOpen}
-        onClose={() => setIsSubscribeOpen(false)}
-        onSubscribed={() => {
-          setUserEmail('subscriber@nytimes.com');
-        }}
-      />
-
-      <LoginModal
-        isOpen={isLoginOpen}
-        onClose={() => setIsLoginOpen(false)}
-        userEmail={userEmail}
-        onLogin={(em) => setUserEmail(em)}
-        onLogout={() => setUserEmail(null)}
-        savedCount={savedArticleIds.length}
-        onOpenSaved={() => setIsSavedDrawerOpen(true)}
-      />
-
-      <WirecutterModal
-        isOpen={isWirecutterOpen}
-        onClose={() => setIsWirecutterOpen(false)}
-        selectedId={wirecutterSelectedId}
-      />
-
-      <CookingModal
-        isOpen={isCookingOpen}
-        onClose={() => setIsCookingOpen(false)}
-      />
-
-      <TechTipModal
-        isOpen={isTechTipOpen}
-        onClose={() => setIsTechTipOpen(false)}
-      />
-
-      <SavedArticlesDrawer
-        isOpen={isSavedDrawerOpen}
-        onClose={() => setIsSavedDrawerOpen(false)}
-        savedIds={savedArticleIds}
-        onRemoveBookmark={handleToggleBookmark}
-        onOpenArticle={handleOpenArticle}
-      />
-
-      <AudioBar
-        isOpen={isAudioBarOpen}
-        onClose={() => setIsAudioBarOpen(false)}
-        title={audioTitle}
+      <WatchlistSidebar
+        isOpen={isWatchlistOpen}
+        onClose={() => setIsWatchlistOpen(false)}
+        watchlistSymbols={watchlist}
+        onSelectSymbol={handleOpenChart}
+        onRemoveSymbol={handleToggleWatchlist}
+        onAddSymbol={sym => handleToggleWatchlist(sym)}
+        isDark={isDark}
       />
     </div>
   );
