@@ -11,7 +11,12 @@ import {
   Globe,
   Sparkles,
   ExternalLink,
-  BookOpen
+  BookOpen,
+  CloudSun,
+  TrendingUp,
+  TrendingDown,
+  Printer,
+  X
 } from 'lucide-react';
 import { ARTICLES, Article, WIRECUTTER_ITEMS, FIELD_REPORTS } from './data/newsData';
 import { WordleModal } from './components/WordleModal';
@@ -27,6 +32,7 @@ import { CookingModal } from './components/CookingModal';
 import { TechTipModal } from './components/TechTipModal';
 import { SavedArticlesDrawer } from './components/SavedArticlesDrawer';
 import { AudioBar } from './components/AudioBar';
+import { TodaysPaperModal } from './components/TodaysPaperModal';
 
 export default function App() {
   // Modal states
@@ -44,6 +50,7 @@ export default function App() {
   const [isCookingOpen, setIsCookingOpen] = useState(false);
   const [isTechTipOpen, setIsTechTipOpen] = useState(false);
   const [isSavedDrawerOpen, setIsSavedDrawerOpen] = useState(false);
+  const [isTodaysPaperOpen, setIsTodaysPaperOpen] = useState(false);
   const [isAudioBarOpen, setIsAudioBarOpen] = useState(false);
   const [audioTitle, setAudioTitle] = useState('The Daily: Inside the Shift in Trump’s Inner Circle');
 
@@ -51,8 +58,8 @@ export default function App() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [savedArticleIds, setSavedArticleIds] = useState<string[]>(['press-secretary-attorney']);
   const [selectedEdition, setSelectedEdition] = useState<'us' | 'international' | 'canada' | 'espanol' | 'chinese'>('us');
-  const [activeNavSection, setActiveNavSection] = useState<string>('Home');
   const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [breakingDismissed, setBreakingDismissed] = useState(false);
 
   // Load bookmarks
   useEffect(() => {
@@ -86,19 +93,45 @@ export default function App() {
 
   return (
     <div className="bg-white min-h-screen text-[#121212] antialiased flex flex-col justify-between selection:bg-[#fff2a8] selection:text-black">
-      {/* Top Banner Notice when edition changes */}
+      {/* Top Banner Notice when international edition changes */}
       {selectedEdition !== 'us' && (
-        <div className="bg-gray-100 text-black py-1.5 px-4 text-xs text-center border-b border-gray-300 flex items-center justify-center space-x-2">
+        <div className="bg-stone-100 text-black py-1.5 px-4 text-xs text-center border-b border-stone-300 flex items-center justify-center space-x-2">
           <Globe className="w-3.5 h-3.5" />
           <span>
-            You are viewing the <strong>{selectedEdition.toUpperCase()}</strong> edition. Stories are curated for this region.
+            You are viewing the <strong>{selectedEdition.toUpperCase()}</strong> edition.
           </span>
           <button
             onClick={() => setSelectedEdition('us')}
-            className="text-nytBlue underline font-bold ml-2 text-[11px]"
+            className="text-[#326891] underline font-bold ml-2 text-[11px] cursor-pointer"
           >
             Switch to U.S.
           </button>
+        </div>
+      )}
+
+      {/* Breaking News Ticker (Pro Editorial Feature) */}
+      {!breakingDismissed && (
+        <div className="bg-[#121212] text-white py-1.5 px-4 text-xs border-b border-stone-800 flex items-center justify-between">
+          <div className="max-w-[1240px] mx-auto w-full flex items-center justify-between">
+            <div className="flex items-center space-x-3 overflow-hidden">
+              <span className="bg-red-700 text-white font-black text-[9px] uppercase tracking-widest px-1.5 py-0.5 rounded-xs shrink-0">
+                BREAKING
+              </span>
+              <button
+                onClick={() => handleOpenArticle(ARTICLES['ukraine-satellite-restricted'])}
+                className="hover:underline text-left truncate cursor-pointer font-serif text-[13px]"
+              >
+                Attack cuts power to 600,000 in Kyiv as military telemetry faces restrictions.
+              </button>
+            </div>
+            <button
+              onClick={() => setBreakingDismissed(true)}
+              className="text-stone-400 hover:text-white p-1 shrink-0 ml-2"
+              title="Dismiss alert"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       )}
 
@@ -122,35 +155,35 @@ export default function App() {
             <nav aria-label="International Editions" className="hidden md:flex items-center space-x-2 text-[11px] font-medium border-l border-gray-300 pl-3">
               <button
                 onClick={() => setSelectedEdition('us')}
-                className={`transition ${selectedEdition === 'us' ? 'font-bold text-black border-b border-black' : 'hover:text-black text-gray-600'}`}
+                className={`transition cursor-pointer ${selectedEdition === 'us' ? 'font-bold text-black border-b border-black' : 'hover:text-black text-gray-600'}`}
               >
                 U.S.
               </button>
               <span className="text-gray-300">|</span>
               <button
                 onClick={() => setSelectedEdition('international')}
-                className={`transition ${selectedEdition === 'international' ? 'font-bold text-black border-b border-black' : 'hover:text-black text-gray-600'}`}
+                className={`transition cursor-pointer ${selectedEdition === 'international' ? 'font-bold text-black border-b border-black' : 'hover:text-black text-gray-600'}`}
               >
                 International
               </button>
               <span className="text-gray-300">|</span>
               <button
                 onClick={() => setSelectedEdition('canada')}
-                className={`transition ${selectedEdition === 'canada' ? 'font-bold text-black border-b border-black' : 'hover:text-black text-gray-600'}`}
+                className={`transition cursor-pointer ${selectedEdition === 'canada' ? 'font-bold text-black border-b border-black' : 'hover:text-black text-gray-600'}`}
               >
                 Canada
               </button>
               <span className="text-gray-300">|</span>
               <button
                 onClick={() => setSelectedEdition('espanol')}
-                className={`transition ${selectedEdition === 'espanol' ? 'font-bold text-black border-b border-black' : 'hover:text-black text-gray-600'}`}
+                className={`transition cursor-pointer ${selectedEdition === 'espanol' ? 'font-bold text-black border-b border-black' : 'hover:text-black text-gray-600'}`}
               >
                 Español
               </button>
               <span className="text-gray-300">|</span>
               <button
                 onClick={() => setSelectedEdition('chinese')}
-                className={`transition ${selectedEdition === 'chinese' ? 'font-bold text-black border-b border-black' : 'hover:text-black text-gray-600'}`}
+                className={`transition cursor-pointer ${selectedEdition === 'chinese' ? 'font-bold text-black border-b border-black' : 'hover:text-black text-gray-600'}`}
               >
                 中文
               </button>
@@ -159,12 +192,12 @@ export default function App() {
 
           {/* Right: Live Date Stamp, Subscription CTA and Login */}
           <div className="flex items-center space-x-3">
-            {/* Date Stamp */}
+            {/* Date Stamp & Today's Paper Link */}
             <div className="hidden sm:flex flex-col text-right leading-tight pr-2">
               <span className="font-bold text-black text-[11px]">Wednesday, October 14, 2026</span>
               <button
-                onClick={() => alert("Today's Paper is archived in digital broadsheet replica format.")}
-                className="text-[10px] text-[#727272] hover:underline text-right"
+                onClick={() => setIsTodaysPaperOpen(true)}
+                className="text-[10px] text-[#727272] hover:underline text-right cursor-pointer"
               >
                 Today’s Paper
               </button>
@@ -173,11 +206,11 @@ export default function App() {
             {/* Saved Articles Bookmark shortcut */}
             <button
               onClick={() => setIsSavedDrawerOpen(true)}
-              className="p-1 text-gray-500 hover:text-black rounded transition relative flex items-center gap-1 text-[11px]"
+              className="p-1 text-gray-500 hover:text-black rounded transition relative flex items-center gap-1 text-[11px] cursor-pointer"
               title="Saved reading list"
             >
               <Bookmark className="w-4 h-4 text-amber-700" fill={savedArticleIds.length > 0 ? 'currentColor' : 'none'} />
-              <span className="hidden sm:inline font-bold">{savedArticleIds.length}</span>
+              <span className="hidden sm:inline font-bold tabular-nums">{savedArticleIds.length}</span>
             </button>
 
             {/* CTA Subscribe Button */}
@@ -198,18 +231,51 @@ export default function App() {
           </div>
         </div>
 
-        {/* Iconic Center Masthead */}
-        <div className="text-center pt-3 pb-2" data-purpose="masthead-brand">
-          <a
-            href="/"
-            onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-            className="inline-block hover:opacity-95 transition-opacity"
-            title="The New York Times"
-          >
-            <h1 className="font-masthead text-5xl md:text-7xl lg:text-[76px] tracking-tight leading-none text-black select-none">
-              The New York Times
-            </h1>
-          </a>
+        {/* Pro Editorial Header: Motto (Left), Masthead (Center), Weather & Financials (Right) */}
+        <div className="pt-3 pb-2 flex flex-col md:flex-row items-center justify-between border-b border-gray-100" data-purpose="masthead-brand">
+          {/* Left: Historic Motto */}
+          <div className="hidden md:block w-48 text-left">
+            <span className="nyt-serif italic text-xs text-[#5a5a5a] block leading-snug">
+              “All the News<br />That’s Fit to Print”
+            </span>
+            <span className="text-[10px] text-stone-400 uppercase tracking-widest font-sans block mt-1">
+              Late Edition
+            </span>
+          </div>
+
+          {/* Center: Iconic Masthead */}
+          <div className="text-center">
+            <a
+              href="/"
+              onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              className="inline-block hover:opacity-95 transition-opacity"
+              title="The New York Times"
+            >
+              <h1 className="font-masthead text-5xl md:text-7xl lg:text-[76px] tracking-tight leading-none text-black select-none">
+                The New York Times
+              </h1>
+            </a>
+          </div>
+
+          {/* Right: Weather & Financial Indicators */}
+          <div className="hidden md:flex flex-col items-end w-48 text-right text-xs text-[#5a5a5a]">
+            <div className="flex items-center space-x-1.5 font-sans font-medium text-[11px] text-stone-700">
+              <CloudSun className="w-4 h-4 text-amber-500" />
+              <span>New York 68°F</span>
+            </div>
+            <div className="text-[10px] text-stone-500 font-mono tabular-nums mt-0.5 space-x-1.5">
+              <span className="text-emerald-700">S&amp;P +0.4%</span>
+              <span>·</span>
+              <span className="text-emerald-700">Nasdaq +0.7%</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Archival Dateline Strip */}
+        <div className="hidden sm:flex items-center justify-between text-[10px] text-stone-500 uppercase tracking-widest font-sans py-1 border-b border-stone-200">
+          <span>VOL. CLXXV . . . No. 60,314</span>
+          <span>WEDNESDAY, OCTOBER 14, 2026</span>
+          <span>$3.00 PRINT FACSIMILE</span>
         </div>
 
         {/* Primary Section Navigation Bar */}
@@ -217,15 +283,15 @@ export default function App() {
           <ul className="flex items-center justify-between text-[12px] whitespace-nowrap tracking-tight font-medium text-black px-1 min-w-[760px]">
             <li>
               <button
-                onClick={() => { setActiveNavSection('U.S.'); alert("Navigating to U.S. News Section"); }}
-                className="hover:underline py-1 cursor-pointer"
+                onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                className="hover:underline py-1 cursor-pointer font-bold"
               >
                 U.S.
               </button>
             </li>
             <li>
               <button
-                onClick={() => { setActiveNavSection('World'); alert("Navigating to World News Section"); }}
+                onClick={() => handleOpenArticle(ARTICLES['ukraine-satellite-restricted'])}
                 className="hover:underline py-1 cursor-pointer"
               >
                 World
@@ -233,7 +299,7 @@ export default function App() {
             </li>
             <li>
               <button
-                onClick={() => { setActiveNavSection('Business'); alert("Navigating to Business & Markets Section"); }}
+                onClick={() => handleOpenArticle(ARTICLES['anthropic-revenue'])}
                 className="hover:underline py-1 cursor-pointer"
               >
                 Business
@@ -241,7 +307,7 @@ export default function App() {
             </li>
             <li>
               <button
-                onClick={() => { setActiveNavSection('Arts'); alert("Navigating to Arts & Entertainment Section"); }}
+                onClick={() => handleOpenArticle(ARTICLES['sally-rooney-britain'])}
                 className="hover:underline py-1 cursor-pointer"
               >
                 Arts
@@ -249,7 +315,7 @@ export default function App() {
             </li>
             <li>
               <button
-                onClick={() => { setActiveNavSection('Lifestyle'); alert("Navigating to Lifestyle & Culture Section"); }}
+                onClick={() => handleOpenArticle(ARTICLES['the-great-read-shelly'])}
                 className="hover:underline py-1 cursor-pointer"
               >
                 Lifestyle
@@ -295,10 +361,10 @@ export default function App() {
             </li>
             <li>
               <button
-                onClick={() => alert("The Athletic: Premier sports reporting, scores and in-depth analytics.")}
-                className="hover:underline py-1 font-semibold cursor-pointer"
+                onClick={() => setIsTodaysPaperOpen(true)}
+                className="hover:underline py-1 font-semibold cursor-pointer text-[#326891]"
               >
-                The Athletic
+                Today’s Paper
               </button>
             </li>
           </ul>
@@ -312,7 +378,7 @@ export default function App() {
             </p>
             <button
               onClick={() => setBannerDismissed(true)}
-              className="absolute right-0 text-gray-400 hover:text-black text-xs px-2"
+              className="absolute right-0 text-gray-400 hover:text-black text-xs px-2 cursor-pointer"
               title="Dismiss"
             >
               ✕
@@ -335,7 +401,7 @@ export default function App() {
                   onClick={() => handleOpenArticle(ARTICLES['trump-women-departures'])}
                   className="group cursor-pointer"
                 >
-                  <h2 className="nyt-serif text-2xl lg:text-[26px] font-bold leading-tight text-[#121212] group-hover:text-gray-600 transition">
+                  <h2 className="nyt-serif text-2xl lg:text-[26px] font-bold leading-tight text-[#121212] group-hover:text-gray-600 transition text-balance">
                     High-Ranking Women Are Leaving the Trump Administration
                   </h2>
                 </div>
@@ -360,7 +426,7 @@ export default function App() {
                   onClick={() => handleOpenArticle(ARTICLES['guilfoyle-fall'])}
                   className="group cursor-pointer"
                 >
-                  <h3 className="nyt-serif text-lg font-bold leading-snug text-[#121212] group-hover:text-gray-600 transition">
+                  <h3 className="nyt-serif text-lg font-bold leading-snug text-[#121212] group-hover:text-gray-600 transition text-balance">
                     The Steep Rise and Sudden Fall of Kimberly Guilfoyle
                   </h3>
                 </div>
@@ -370,10 +436,10 @@ export default function App() {
                 <div className="flex items-center space-x-2 text-[11px] text-[#727272] mt-2">
                   <button
                     onClick={() => handleOpenArticle(ARTICLES['guilfoyle-fall'])}
-                    className="flex items-center space-x-1 text-[#326891] hover:underline"
+                    className="flex items-center space-x-1 text-[#326891] hover:underline cursor-pointer"
                   >
                     <MessageSquare className="w-3 h-3 fill-current" />
-                    <span>519 comments</span>
+                    <span className="tabular-nums">519 comments</span>
                   </button>
                   <span>•</span>
                   <span>3 min read</span>
@@ -406,6 +472,7 @@ export default function App() {
               >
                 <img
                   alt="Portrait of official in professional attire with glasses"
+                  referrerPolicy="no-referrer"
                   className="w-full h-[270px] lg:h-[310px] object-cover object-top group-hover:scale-[1.01] transition duration-300"
                   src="https://lh3.googleusercontent.com/aida-public/AB6AXuDnTIWo3IH87Tfr_mdUiywauvtb_zbYRyc2iiXX7dBEowM_p2yoMH3udMA7AfOIjWO7BwBJGSJ48AutaG-RA07rKAYiCyvgc-BbMilnx3EkxTIPlXIYud8wWbfQOVCnbkhsMBYFtZULXL2KuayIbwHVDztwCJ7OuTY9JTZqaTxFdbTPmugDMvHBUV4sreYbdI9xPO7bVBPTJEC7pNXpgya2VwYLr7PU7TqUnu5EQba7_bwA8YPUKLlhHA"
                 />
@@ -418,7 +485,7 @@ export default function App() {
                   onClick={() => handleOpenArticle(ARTICLES['press-secretary-attorney'])}
                   className="group cursor-pointer"
                 >
-                  <h2 className="nyt-serif text-2xl lg:text-[28px] font-bold leading-tight text-[#121212] group-hover:text-gray-600 transition">
+                  <h2 className="nyt-serif text-2xl lg:text-[28px] font-bold leading-tight text-[#121212] group-hover:text-gray-600 transition text-balance">
                     Trump’s New Press Secretary: Not-Quite Attorney at Law
                   </h2>
                 </div>
@@ -433,7 +500,7 @@ export default function App() {
                       setSelectedEdition('espanol');
                       handleOpenArticle(ARTICLES['press-secretary-attorney']);
                     }}
-                    className="text-[#326891] hover:underline"
+                    className="text-[#326891] hover:underline cursor-pointer"
                   >
                     Read in Español
                   </button>
@@ -446,16 +513,16 @@ export default function App() {
               <ul className="space-y-2 nyt-serif text-[13px] text-[#121212] list-disc pl-4">
                 <li>
                   <button
-                    onClick={() => alert("Jon Ossoff Campaign Dispatch: Georgia senator discusses 2028 landscape.")}
-                    className="hover:underline text-left"
+                    onClick={() => handleOpenArticle(ARTICLES['trump-women-departures'])}
+                    className="hover:underline text-left cursor-pointer"
                   >
                     Jon Ossoff says he’s not running for president, but history says he can change his mind.
                   </button>
                 </li>
                 <li>
                   <button
-                    onClick={() => alert("Midterm Ad Spending Investigation: Federal election finance disclosures top $10B.")}
-                    className="hover:underline text-left"
+                    onClick={() => handleOpenArticle(ARTICLES['texas-senate-race'])}
+                    className="hover:underline text-left cursor-pointer"
                   >
                     The breathtaking cost of the midterms: $10 billion and counting on ads.
                   </button>
@@ -470,7 +537,7 @@ export default function App() {
             <div>
               <div className="border-b border-black pb-1 mb-2.5 flex items-center justify-between">
                 <span className="text-[11px] font-extrabold uppercase tracking-wider text-black">Russia-Ukraine War</span>
-                <span className="text-[10px] text-red-700 font-bold uppercase tracking-wider animate-pulse flex items-center gap-1">
+                <span className="text-[10px] text-red-700 font-bold uppercase tracking-wider flex items-center gap-1">
                   <span>●</span> Developing
                 </span>
               </div>
@@ -478,7 +545,7 @@ export default function App() {
                 onClick={() => handleOpenArticle(ARTICLES['ukraine-satellite-restricted'])}
                 className="group block mb-2 cursor-pointer"
               >
-                <h3 className="nyt-serif text-base font-bold leading-snug text-[#121212] group-hover:underline">
+                <h3 className="nyt-serif text-base font-bold leading-snug text-[#121212] group-hover:underline text-balance">
                   Ukraine’s Exposure Grows as Satellite Use Is Restricted and Russia Escalates
                 </h3>
               </div>
@@ -488,7 +555,7 @@ export default function App() {
               <div className="flex items-center space-x-2 text-[11px] text-[#727272] mt-1.5 pb-3 border-b border-gray-200">
                 <button
                   onClick={() => handleOpenArticle(ARTICLES['ukraine-satellite-restricted'])}
-                  className="text-[#326891] hover:underline"
+                  className="text-[#326891] hover:underline cursor-pointer tabular-nums"
                 >
                   1.1k comments
                 </button>
@@ -502,7 +569,7 @@ export default function App() {
                   onClick={() => handleOpenArticle(ARTICLES['trump-diesel-putin'])}
                   className="group block cursor-pointer"
                 >
-                  <h4 className="nyt-serif text-sm font-bold leading-snug text-[#121212] group-hover:underline">
+                  <h4 className="nyt-serif text-sm font-bold leading-snug text-[#121212] group-hover:underline text-balance">
                     Why Trump’s Diesel Deal With Putin Won’t Knock Down High Prices
                   </h4>
                 </div>
@@ -514,7 +581,7 @@ export default function App() {
                   onClick={() => handleOpenArticle(ARTICLES['us-intelligence-ukraine'])}
                   className="group block cursor-pointer"
                 >
-                  <h4 className="nyt-serif text-sm font-bold leading-snug text-[#121212] group-hover:underline">
+                  <h4 className="nyt-serif text-sm font-bold leading-snug text-[#121212] group-hover:underline text-balance">
                     The U.S. Continues to Provide Intelligence to Ukraine, Officials Say
                   </h4>
                 </div>
@@ -529,7 +596,7 @@ export default function App() {
                 onClick={() => handleOpenArticle(ARTICLES['evening-briefing'])}
                 className="group block mt-1 cursor-pointer"
               >
-                <h4 className="nyt-serif text-base font-bold text-[#121212] group-hover:underline leading-snug">
+                <h4 className="nyt-serif text-base font-bold text-[#121212] group-hover:underline leading-snug text-balance">
                   Catch Up on Today’s Biggest Stories
                 </h4>
               </div>
@@ -549,8 +616,8 @@ export default function App() {
               <span className="text-xs font-normal text-[#727272]">| Special Coverage</span>
             </h3>
             <button
-              onClick={() => { setActiveNavSection('Technology'); setIsSearchOpen(true); }}
-              className="text-xs text-[#326891] hover:underline font-medium"
+              onClick={() => setIsSearchOpen(true)}
+              className="text-xs text-[#326891] hover:underline font-medium cursor-pointer"
             >
               Explore All Tech ›
             </button>
@@ -565,10 +632,11 @@ export default function App() {
               >
                 <img
                   alt="Abstract visual representing conversational AI agents"
-                  className="w-full h-40 object-cover rounded-sm mb-2 group-hover:scale-102 transition duration-200"
+                  referrerPolicy="no-referrer"
+                  className="w-full h-40 object-cover rounded-sm mb-2 group-hover:scale-[1.01] transition duration-200"
                   src="https://lh3.googleusercontent.com/aida-public/AB6AXuC_CtfAEx5hATYDr7Jl9pvlcP9FAUwfWxoQBvfLCVti-HH7ACbuUpzvu4ojgbLuyXOmpz3aEkzk4Jatr9ZrroRh1BdlPHjn3U7entJggzabLQrZZ94IiIArQRMsiRp7_5YchFGLKo7KmT3hwv3d3rxgN6qXtV9LRP78xdCNpNRZO8fPO09vf91SUVBTIY9a0VsGtXVW1fn2A5TaqX7nYVzPGj6IsUyc1B5zAYide5TctDNAQ89-KQvc1A"
                 />
-                <h4 className="nyt-serif text-lg font-bold leading-snug text-[#121212] group-hover:underline">
+                <h4 className="nyt-serif text-lg font-bold leading-snug text-[#121212] group-hover:underline text-balance">
                   What a Group of A.I. Agents Talked About as Their Humans Had a Dinner Party
                 </h4>
               </div>
@@ -578,7 +646,7 @@ export default function App() {
               <div className="text-[11px] text-[#727272] flex items-center space-x-2">
                 <button
                   onClick={() => handleOpenArticle(ARTICLES['ai-dinner-party'])}
-                  className="text-[#326891] hover:underline"
+                  className="text-[#326891] hover:underline cursor-pointer tabular-nums"
                 >
                   210 comments
                 </button>
@@ -595,10 +663,11 @@ export default function App() {
               >
                 <img
                   alt="Data charts displaying revenue explosion in tech"
-                  className="w-full h-40 object-cover rounded-sm mb-2 group-hover:scale-102 transition duration-200"
+                  referrerPolicy="no-referrer"
+                  className="w-full h-40 object-cover rounded-sm mb-2 group-hover:scale-[1.01] transition duration-200"
                   src="https://lh3.googleusercontent.com/aida-public/AB6AXuD0XT8Z_d4IYrvhlI9QsIch67b_0D_sr9hLFYTkwisStDPiLjAxkblTx7m43yQiaea3wwg0wLEDSs8ecB2Jhccz5FV-UdPxtJd-A-MGmYEBwtjD_Ua2c1l4he99ZelFFhFCunShES9tsvzZNxo9v2MmZXdnNjwXy-gIG3Pks49vdqMZEdC8BPXJQ3QVq-bJNdQpO9SYjSuy9gAat1JmSRy3uqWku0m46aqWjbcEc-N-VWZBdTz1nGnI2w"
                 />
-                <h4 className="nyt-serif text-lg font-bold leading-snug text-[#121212] group-hover:underline">
+                <h4 className="nyt-serif text-lg font-bold leading-snug text-[#121212] group-hover:underline text-balance">
                   Anthropic Says Revenue Jumped 45% to $16.8 Billion in Third Quarter
                 </h4>
               </div>
@@ -620,8 +689,8 @@ export default function App() {
                   {FIELD_REPORTS.map(fr => (
                     <li key={fr.id} className="pt-2">
                       <button
-                        onClick={() => alert(`Opening Report: ${fr.title}`)}
-                        className="hover:underline font-semibold text-left block text-[#121212]"
+                        onClick={() => handleOpenArticle(ARTICLES['ai-dinner-party'])}
+                        className="hover:underline font-semibold text-left block text-[#121212] cursor-pointer"
                       >
                         {fr.title}
                       </button>
@@ -632,7 +701,7 @@ export default function App() {
               <div className="pt-4 border-t border-gray-200 mt-2">
                 <button
                   onClick={() => setIsTechTipOpen(true)}
-                  className="w-full text-xs font-bold text-[#326891] hover:underline flex items-center justify-between"
+                  className="w-full text-xs font-bold text-[#326891] hover:underline flex items-center justify-between cursor-pointer"
                 >
                   <span>Got a confidential tech tip?</span>
                   <span>Submit info ›</span>
@@ -649,8 +718,8 @@ export default function App() {
             <div className="border-b border-black pb-1 mb-4 flex items-center justify-between">
               <h3 className="nyt-serif text-xl font-black text-black">Opinion</h3>
               <button
-                onClick={() => alert("Browse Opinion pieces and guest essays from all Times columnists.")}
-                className="text-xs text-[#326891] hover:underline font-semibold"
+                onClick={() => handleOpenArticle(ARTICLES['opinion-democrats'])}
+                className="text-xs text-[#326891] hover:underline font-semibold cursor-pointer"
               >
                 All Columnists ›
               </button>
@@ -663,7 +732,7 @@ export default function App() {
                   onClick={() => handleOpenArticle(ARTICLES['opinion-democrats'])}
                   className="group block mt-0.5 cursor-pointer"
                 >
-                  <h4 className="nyt-serif text-lg font-bold leading-tight text-[#121212] group-hover:underline">
+                  <h4 className="nyt-serif text-lg font-bold leading-tight text-[#121212] group-hover:underline text-balance">
                     Democrats Shouldn’t Wait Two More Years
                   </h4>
                 </div>
@@ -672,7 +741,7 @@ export default function App() {
                 </p>
                 <button
                   onClick={() => handleOpenArticle(ARTICLES['opinion-democrats'])}
-                  className="text-[11px] text-[#326891] mt-1 inline-block hover:underline"
+                  className="text-[11px] text-[#326891] mt-1 inline-block hover:underline cursor-pointer tabular-nums"
                 >
                   388 comments
                 </button>
@@ -685,7 +754,7 @@ export default function App() {
                   onClick={() => handleOpenArticle(ARTICLES['opinion-ebola'])}
                   className="group block mt-0.5 cursor-pointer"
                 >
-                  <h4 className="nyt-serif text-base font-bold leading-tight text-[#121212] group-hover:underline">
+                  <h4 className="nyt-serif text-base font-bold leading-tight text-[#121212] group-hover:underline text-balance">
                     I’ve Never Seen Ebola Spread Like This
                   </h4>
                 </div>
@@ -699,11 +768,11 @@ export default function App() {
                   onClick={() => handleOpenArticle(ARTICLES['opinion-manifestoes'])}
                   className="group block mt-0.5 cursor-pointer"
                 >
-                  <h4 className="nyt-serif text-base font-bold leading-tight text-[#121212] group-hover:underline">
+                  <h4 className="nyt-serif text-base font-bold leading-tight text-[#121212] group-hover:underline text-balance">
                     A Manifesto to End All Manifestoes
                   </h4>
                 </div>
-                <span className="text-[11px] text-[#326891] mt-1 inline-block">69 comments</span>
+                <span className="text-[11px] text-[#326891] mt-1 inline-block tabular-nums">69 comments</span>
               </article>
 
               {/* Opinion Essay 4 */}
@@ -713,7 +782,7 @@ export default function App() {
                   onClick={() => handleOpenArticle(ARTICLES['opinion-tom-cruise'])}
                   className="group block mt-0.5 cursor-pointer"
                 >
-                  <h4 className="nyt-serif text-base font-bold leading-tight text-[#121212] group-hover:underline">
+                  <h4 className="nyt-serif text-base font-bold leading-tight text-[#121212] group-hover:underline text-balance">
                     Tom Cruise’s Big Flop Is a Secret Masterpiece
                   </h4>
                 </div>
@@ -730,7 +799,7 @@ export default function App() {
                 onClick={() => handleOpenArticle(ARTICLES['the-great-read-shelly'])}
                 className="group block mt-1 cursor-pointer"
               >
-                <h3 className="nyt-serif text-xl font-bold leading-tight text-[#121212] group-hover:underline">
+                <h3 className="nyt-serif text-xl font-bold leading-tight text-[#121212] group-hover:underline text-balance">
                   Coming Out at 50 Can Be Hard. Shelly Found a Coach.
                 </h3>
               </div>
@@ -746,7 +815,7 @@ export default function App() {
                 onClick={() => handleOpenArticle(ARTICLES['battle-the-pierre'])}
                 className="group block mt-1 cursor-pointer"
               >
-                <h4 className="nyt-serif text-base font-bold text-[#121212] group-hover:underline">
+                <h4 className="nyt-serif text-base font-bold text-[#121212] group-hover:underline text-balance">
                   Battle Over the Pierre Ends in Defeat for the Buyer Pushed by Lutnick
                 </h4>
               </div>
@@ -760,7 +829,7 @@ export default function App() {
                 onClick={() => handleOpenArticle(ARTICLES['sally-rooney-britain'])}
                 className="group block cursor-pointer"
               >
-                <h4 className="nyt-serif text-sm font-bold text-[#121212] group-hover:underline">
+                <h4 className="nyt-serif text-sm font-bold text-[#121212] group-hover:underline text-balance">
                   Sally Rooney Says Her Novels Will No Longer Be Sold in Britain
                 </h4>
               </div>
@@ -776,7 +845,7 @@ export default function App() {
                 <h4 className="text-xs font-bold uppercase tracking-wider text-black">NYT Games</h4>
                 <button
                   onClick={() => setIsWordleOpen(true)}
-                  className="text-[11px] text-[#326891] hover:underline"
+                  className="text-[11px] text-[#326891] hover:underline cursor-pointer"
                 >
                   All Games ›
                 </button>
@@ -873,31 +942,31 @@ export default function App() {
             The New York Times
           </a>
           <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-[#121212] font-medium mt-3 md:mt-0">
-            <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="hover:underline">
+            <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="hover:underline cursor-pointer">
               News
             </button>
-            <a href="#opinion" className="hover:underline">
+            <a href="#opinion" className="hover:underline cursor-pointer">
               Opinion
             </a>
-            <button onClick={() => alert("Arts & Culture coverage.")} className="hover:underline">
+            <button onClick={() => handleOpenArticle(ARTICLES['sally-rooney-britain'])} className="hover:underline cursor-pointer">
               Arts
             </button>
-            <button onClick={() => alert("Living & Style desk.")} className="hover:underline">
+            <button onClick={() => handleOpenArticle(ARTICLES['the-great-read-shelly'])} className="hover:underline cursor-pointer">
               Living
             </button>
-            <button onClick={() => alert("Listings & Real Estate.")} className="hover:underline">
+            <button onClick={() => handleOpenArticle(ARTICLES['battle-the-pierre'])} className="hover:underline cursor-pointer">
               Listings &amp; More
             </button>
-            <button onClick={() => setIsCookingOpen(true)} className="hover:underline font-semibold text-orange-800">
+            <button onClick={() => setIsCookingOpen(true)} className="hover:underline font-semibold text-orange-800 cursor-pointer">
               Cooking
             </button>
-            <button onClick={() => { setWirecutterSelectedId('wc1'); setIsWirecutterOpen(true); }} className="hover:underline font-semibold">
+            <button onClick={() => { setWirecutterSelectedId('wc1'); setIsWirecutterOpen(true); }} className="hover:underline font-semibold cursor-pointer">
               Wirecutter
             </button>
-            <button onClick={() => alert("The Athletic sports journalism.")} className="hover:underline font-semibold">
-              The Athletic
+            <button onClick={() => setIsTodaysPaperOpen(true)} className="hover:underline font-semibold text-[#326891] cursor-pointer">
+              Today’s Paper
             </button>
-            <button onClick={() => setIsWordleOpen(true)} className="hover:underline font-semibold text-emerald-800">
+            <button onClick={() => setIsWordleOpen(true)} className="hover:underline font-semibold text-emerald-800 cursor-pointer">
               Games
             </button>
           </div>
@@ -909,23 +978,21 @@ export default function App() {
             <p>© 2026 The New York Times Company</p>
           </div>
           <nav aria-label="Footer Legal Links" className="flex flex-wrap items-center justify-center gap-x-3 text-[11px]">
-            <button onClick={() => alert("About The New York Times Company")} className="hover:underline">NYTCo</button>
-            <button onClick={() => alert("Contact Customer Care & Newsroom")} className="hover:underline">Contact Us</button>
-            <button onClick={() => alert("Accessibility Policy")} className="hover:underline">Accessibility</button>
-            <button onClick={() => alert("Careers at The Times")} className="hover:underline">Work with us</button>
-            <button onClick={() => alert("Advertising & Media Kit")} className="hover:underline">Advertise</button>
-            <button onClick={() => alert("T Brand Studio Content Studio")} className="hover:underline">T Brand Studio</button>
-            <button onClick={() => alert("Privacy Policy")} className="hover:underline">Privacy Policy</button>
-            <button onClick={() => alert("Terms of Service")} className="hover:underline">Terms of Service</button>
-            <button onClick={() => alert("Terms of Sale")} className="hover:underline">Terms of Sale</button>
-            <button onClick={() => alert("Site Map Index")} className="hover:underline">Site Map</button>
-            <button onClick={() => setIsSubscribeOpen(true)} className="hover:underline font-bold text-black">Subscriptions</button>
+            <button onClick={() => setIsTodaysPaperOpen(true)} className="hover:underline cursor-pointer">NYTCo</button>
+            <button onClick={() => setIsTechTipOpen(true)} className="hover:underline cursor-pointer">Contact Us</button>
+            <button onClick={() => setIsSubscribeOpen(true)} className="hover:underline cursor-pointer">Subscriptions</button>
+            <button onClick={() => alert("Accessibility Statement")} className="hover:underline cursor-pointer">Accessibility</button>
+            <button onClick={() => alert("Work with us")} className="hover:underline cursor-pointer">Careers</button>
+            <button onClick={() => alert("Advertise with NYT")} className="hover:underline cursor-pointer">Advertise</button>
+            <button onClick={() => alert("Privacy Policy")} className="hover:underline cursor-pointer">Privacy Policy</button>
+            <button onClick={() => alert("Terms of Service")} className="hover:underline cursor-pointer">Terms of Service</button>
+            <button onClick={() => alert("Site Map Directory")} className="hover:underline cursor-pointer">Site Map</button>
           </nav>
         </div>
       </footer>
       {/* END: SiteFooter */}
 
-      {/* MODALS AND DRAWERS */}
+      {/* ALL MODALS AND DRAWERS */}
       <ArticleModal
         article={activeArticle}
         isOpen={isArticleModalOpen}
@@ -933,6 +1000,12 @@ export default function App() {
         isBookmarked={activeArticle ? savedArticleIds.includes(activeArticle.id) : false}
         onToggleBookmark={handleToggleBookmark}
         onOpenArticle={handleOpenArticle}
+      />
+
+      <TodaysPaperModal
+        isOpen={isTodaysPaperOpen}
+        onClose={() => setIsTodaysPaperOpen(false)}
+        onSelectArticle={handleOpenArticle}
       />
 
       <WordleModal
